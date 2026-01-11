@@ -1,10 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://demo.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'demo-key';
-
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('Supabase environment variables are not set. Using demo values for development.');
-}
+const supabaseUrl = 'https://lxizusqvacbsjnhyzwif.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4aXp1c3F2YWNic2puaHl6d2lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODM3ODYsImV4cCI6MjA4MzU1OTc4Nn0.jYjb_y2x9etbhb6A3FNN2iKO-DAJa4uVF-ZznYmW6Gs';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

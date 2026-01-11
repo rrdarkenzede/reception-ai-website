@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label"
 import { Target, Eye, EyeOff, Loader2, Phone } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
-import { DEV_USERS } from "@/lib/dev-users"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -125,11 +124,11 @@ export default function LoginPage() {
                 size="sm"
                 className="w-full h-8 text-xs bg-white/5 border-white/10"
                 onClick={() => {
-                  setEmail(DEV_USERS.admin.email)
-                  setPassword(DEV_USERS.admin.password)
+                  setEmail('admin@receptionai.com')
+                  setPassword('admin123')
                 }}
               >
-                Admin: {DEV_USERS.admin.email}
+                Admin: admin@receptionai.com
               </Button>
               <Button
                 type="button"
@@ -137,11 +136,11 @@ export default function LoginPage() {
                 size="sm"
                 className="w-full h-8 text-xs bg-white/5 border-white/10"
                 onClick={() => {
-                  setEmail(DEV_USERS.enterprise.email)
-                  setPassword(DEV_USERS.enterprise.password)
+                  setEmail('entreprise@receptionai.com')
+                  setPassword('entreprise123')
                 }}
               >
-                Entreprise: {DEV_USERS.enterprise.email}
+                Entreprise: entreprise@receptionai.com
               </Button>
             </div>
           </div>
