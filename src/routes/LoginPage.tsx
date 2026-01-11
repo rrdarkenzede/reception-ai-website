@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useState, useEffect, type FormEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Target, Eye, EyeOff, Loader2, Phone } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+import { DEV_USERS } from "@/lib/dev-users"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -113,6 +114,37 @@ export default function LoginPage() {
               Initialize System
             </Button>
           </form>
+
+          {/* Demo Accounts */}
+          <div className="mt-6 pt-6 border-t border-border/50">
+            <p className="text-xs text-muted-foreground mb-3 text-center">Comptes de démonstration</p>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs bg-white/5 border-white/10"
+                onClick={() => {
+                  setEmail(DEV_USERS.admin.email)
+                  setPassword(DEV_USERS.admin.password)
+                }}
+              >
+                Admin: {DEV_USERS.admin.email}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs bg-white/5 border-white/10"
+                onClick={() => {
+                  setEmail(DEV_USERS.enterprise.email)
+                  setPassword(DEV_USERS.enterprise.password)
+                }}
+              >
+                Entreprise: {DEV_USERS.enterprise.email}
+              </Button>
+            </div>
+          </div>
 
           {/* Contact info */}
           <div className="mt-8 pt-6 border-t border-border/50 text-center">
