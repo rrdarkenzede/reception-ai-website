@@ -2,6 +2,12 @@
 
 # dependencies
 /node_modules
+.pnpm-store/
+.pnpm-debug.log*
+
+# Lock files (let each environment manage their own)
+pnpm-lock.yaml
+package-lock.json
 
 # next.js
 /.next/
