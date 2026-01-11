@@ -2,20 +2,32 @@
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { LogOut, Users, TrendingUp, DollarSign } from "lucide-react"
-import { logout, getUsers, getRDVs } from "@/lib/store"
+import { logout, getUsers, getAllRDVs } from "@/lib/store"
+import { useEffect, useState } from "react"
+import type { User, RDV } from "@/lib/types"
 
 export function AdminNavbar() {
   const navigate = useNavigate()
-  const users = getUsers()
-  const rdvs = getRDVs()
+  const [users, setUsers] = useState<User[]>([])
+  const [rdvs, setRdvs] = useState<RDV[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const [u, r] = await Promise.all([getUsers(), getAllRDVs()])
+      setUsers(u)
+      setRdvs(r)
+    }
+    load()
+  }, [])
+
   const totalRevenue = users.reduce((acc, u) => {
     if (u.plan === "pro") return acc + 500
     if (u.plan === "elite") return acc + 1000
     return acc
   }, 0)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate("/login")
   }
 

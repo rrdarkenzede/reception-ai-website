@@ -52,10 +52,10 @@ export default function ReservationsPage() {
         loadRdvs()
     }, [])
 
-    const loadRdvs = () => {
-        const user = getCurrentUser()
+    const loadRdvs = async () => {
+        const user = await getCurrentUser()
         if (user) {
-            setRdvs(getRDVs(user.id))
+            setRdvs(await getRDVs(user.id))
         }
     }
 
@@ -69,16 +69,16 @@ export default function ReservationsPage() {
         setFormStatus("pending")
     }
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!formClientName || !formPhone || !formDate || !formTime) {
             toast.error("Veuillez remplir tous les champs obligatoires")
             return
         }
 
-        const user = getCurrentUser()
+        const user = await getCurrentUser()
         if (!user) return
 
-        addRDV({
+        await addRDV({
             userId: user.id,
             clientName: formClientName,
             phone: formPhone,
@@ -92,7 +92,7 @@ export default function ReservationsPage() {
         toast.success("Réservation créée avec succès")
         setIsCreateOpen(false)
         resetForm()
-        loadRdvs()
+        await loadRdvs()
     }
 
     const handleEdit = (rdv: RDV) => {
@@ -106,10 +106,10 @@ export default function ReservationsPage() {
         setFormStatus(rdv.status)
     }
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!editingRdv) return
 
-        updateRDV(editingRdv.id, {
+        await updateRDV(editingRdv.id, {
             clientName: formClientName,
             phone: formPhone,
             date: formDate,
@@ -122,14 +122,14 @@ export default function ReservationsPage() {
         toast.success("Réservation mise à jour")
         setEditingRdv(null)
         resetForm()
-        loadRdvs()
+        await loadRdvs()
     }
 
-    const handleDelete = (rdv: RDV) => {
+    const handleDelete = async (rdv: RDV) => {
         if (confirm(`Supprimer la réservation de "${rdv.clientName}" ?`)) {
-            deleteRDV(rdv.id)
+            await deleteRDV(rdv.id)
             toast.success("Réservation supprimée")
-            loadRdvs()
+            await loadRdvs()
         }
     }
 

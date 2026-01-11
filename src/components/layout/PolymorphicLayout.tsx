@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ElementType } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useBusinessConfig } from '@/hooks/useBusinessConfig';
@@ -10,12 +10,13 @@ import {
     Calendar,
     Phone,
     Settings,
-    BookOpen,
     Menu,
     LogOut,
     Bell,
     ChevronDown,
     Target,
+    Package,
+    Megaphone,
 } from 'lucide-react';
 
 // UI Components
@@ -24,10 +25,8 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +35,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // ============================================================================
 // TYPES
@@ -52,7 +52,7 @@ interface PolymorphicLayoutProps {
 }
 
 interface NavItem {
-    icon: React.ElementType;
+    icon: ElementType;
     label: string;
     href: string;
     minTier?: Plan;
@@ -63,11 +63,19 @@ interface NavItem {
 // ============================================================================
 
 const getNavItems = (businessType: string): NavItem[] => {
+    const bt = String(businessType || '').toLowerCase();
+    const bookingsLabel = ['automotive', 'garage', 'autoecole'].includes(bt)
+        ? 'Bay Schedule'
+        : ['medical', 'dentiste', 'clinique', 'veterinaire'].includes(bt)
+            ? 'Doctor Agenda'
+            : 'Reservations';
+
     const baseItems: NavItem[] = [
         { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-        { icon: Calendar, label: 'Agenda', href: '/dashboard/agenda' },
+        { icon: Calendar, label: bookingsLabel, href: '/dashboard/bookings' },
         { icon: Phone, label: 'Appels', href: '/dashboard/calls' },
-        { icon: BookOpen, label: 'Ressources', href: '/dashboard/resources', minTier: 'pro' },
+        { icon: Package, label: 'Stock', href: '/dashboard/stock', minTier: 'pro' },
+        { icon: Megaphone, label: 'Promos', href: '/dashboard/promos', minTier: 'pro' },
         { icon: Settings, label: 'Paramètres', href: '/dashboard/settings' },
     ];
 
@@ -132,40 +140,41 @@ function Sidebar({ businessType, tier, companyName, isMobile = false, onNavigate
                 </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                {navItems.map((item) => {
-                    if (!canAccess(item.minTier)) return null;
+            <ScrollArea className="flex-1">
+                <nav className="p-4 space-y-1">
+                    {navItems.map((item) => {
+                        if (!canAccess(item.minTier)) return null;
 
-                    const isActive = location.pathname === item.href;
-                    const ItemIcon = item.icon;
+                        const isActive = location.pathname === item.href;
+                        const ItemIcon = item.icon;
 
-                    return (
-                        <Link
-                            key={item.href}
-                            to={item.href}
-                            onClick={onNavigate}
-                            className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
-                                isActive
-                                    ? 'text-white shadow-lg'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                            )}
-                            style={
-                                isActive
-                                    ? {
-                                        background: `linear-gradient(135deg, ${theme.primary}, ${theme.accent})`,
-                                        boxShadow: theme.glow,
-                                    }
-                                    : undefined
-                            }
-                        >
-                            <ItemIcon className="w-5 h-5" />
-                            {item.label}
-                        </Link>
-                    );
-                })}
-            </nav>
+                        return (
+                            <Link
+                                key={item.href}
+                                to={item.href}
+                                onClick={onNavigate}
+                                className={cn(
+                                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                                    isActive
+                                        ? 'text-white shadow-lg'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                                )}
+                                style={
+                                    isActive
+                                        ? {
+                                            background: `linear-gradient(135deg, ${theme.primary}, ${theme.accent})`,
+                                            boxShadow: theme.glow,
+                                        }
+                                        : undefined
+                                }
+                            >
+                                <ItemIcon className="w-5 h-5" />
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </nav>
+            </ScrollArea>
 
             {/* Tier Badge */}
             <div className="p-4 border-t border-border/50">
@@ -205,6 +214,7 @@ function Header({
     onMobileMenuOpen,
 }: HeaderProps) {
     const { theme } = useBusinessConfig(businessType);
+    const modeLabel = `${String(businessType).toUpperCase()} MODE`;
     const initials = userName
         .split(' ')
         .map((n) => n[0])
@@ -214,7 +224,7 @@ function Header({
 
     return (
         <header
-            className="h-16 flex items-center justify-between px-4 lg:px-6 border-b bg-card/50 backdrop-blur-sm"
+            className="sticky top-0 z-40 h-16 flex items-center justify-between px-4 lg:px-6 border-b bg-card/50 backdrop-blur-md"
             style={{ borderColor: `${theme.primary}20` }}
         >
             {/* Mobile Menu Button */}
@@ -260,7 +270,20 @@ function Header({
                                 </AvatarFallback>
                             </Avatar>
                             <div className="hidden md:flex flex-col items-start">
-                                <span className="text-sm font-medium text-foreground">{userName}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-foreground">{userName}</span>
+                                    <span
+                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                                        style={{
+                                            color: theme.primary,
+                                            borderColor: `${theme.primary}30`,
+                                            backgroundColor: `${theme.primary}15`,
+                                            boxShadow: theme.glow,
+                                        }}
+                                    >
+                                        {modeLabel}
+                                    </span>
+                                </div>
                                 <span className="text-xs text-muted-foreground">{userEmail}</span>
                             </div>
                             <ChevronDown className="hidden md:block w-4 h-4 text-muted-foreground" />
@@ -310,7 +333,7 @@ export function PolymorphicLayout({
         <div className="min-h-screen bg-background">
             {/* Desktop Sidebar */}
             <aside
-                className="hidden lg:block fixed left-0 top-0 h-screen w-64 border-r"
+                className="hidden lg:block fixed left-0 top-0 h-screen w-[260px] border-r"
                 style={{ borderColor: `${theme.primary}30` }}
             >
                 <Sidebar
@@ -337,7 +360,7 @@ export function PolymorphicLayout({
             </Sheet>
 
             {/* Main Content */}
-            <div className="lg:pl-64">
+            <div className="lg:pl-[260px]">
                 {/* Header */}
                 <Header
                     businessType={businessType}

@@ -1,10 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Target, Eye, EyeOff, Loader2, Phone } from "lucide-react"
-import { login } from "@/lib/store"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 
 export default function LoginPage() {
@@ -13,29 +13,48 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [shake, setShake] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    let mounted = true
+
+    async function checkExistingSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!mounted) return
+      if (session) navigate("/dashboard", { replace: true })
+    }
+
+    checkExistingSession()
+
+    return () => {
+      mounted = false
+    }
+  }, [navigate])
+
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    const user = login(email, password)
-    if (user) {
-      toast.success(`Bienvenue, ${user.name}!`)
-      if (user.role === "admin") {
-        navigate("/admin")
-      } else {
-        navigate("/dashboard")
-      }
-    } else {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      navigate("/dashboard", { replace: true })
+    } catch {
       toast.error("Email ou mot de passe incorrect")
+      setShake(true)
+      window.setTimeout(() => setShake(false), 400)
     }
     setIsLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center relative overflow-hidden p-4">
+      <div className="absolute -top-40 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-linear-to-br from-cyan-500/40 via-indigo-500/30 to-fuchsia-500/30 blur-3xl animate-blob" />
+      <div className="absolute -bottom-48 left-1/4 h-[520px] w-[520px] rounded-full bg-linear-to-br from-fuchsia-500/25 via-cyan-500/20 to-indigo-500/20 blur-3xl animate-blob" />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
@@ -47,7 +66,7 @@ export default function LoginPage() {
         </Link>
 
         {/* Card */}
-        <div className="glass-card rounded-2xl p-8 border-border/30">
+        <div className={"glass-card rounded-2xl p-8 border-border/30 " + (shake ? "animate-shake" : "")}>
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-foreground">Connexion</h1>
             <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace client</p>
@@ -63,7 +82,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-secondary/50 border-border/50"
+                className="h-11 bg-white/5 border-white/10"
               />
             </div>
 
@@ -77,7 +96,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-secondary/50 border-border/50 pr-10"
+                  className="h-11 bg-white/5 border-white/10 pr-10"
                 />
                 <button
                   type="button"
@@ -91,7 +110,7 @@ export default function LoginPage() {
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
               {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Se connecter
+              Initialize System
             </Button>
           </form>
 

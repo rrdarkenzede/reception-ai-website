@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Users, TrendingUp, DollarSign, Phone, Calendar, ArrowRight, Plus } from "lucide-react"
-import { getUsers, getRDVs, getCallLogs } from "@/lib/store"
+import { getUsers, getAllRDVs, getAllCallLogs } from "@/lib/store"
 
 export default function AdminPage() {
   const [stats, setStats] = useState({
@@ -16,26 +16,30 @@ export default function AdminPage() {
   })
 
   useEffect(() => {
-    const users = getUsers()
-    const rdvs = getRDVs()
-    const calls = getCallLogs()
+    async function load() {
+      const users = await getUsers()
+      const rdvs = await getAllRDVs()
+      const calls = await getAllCallLogs()
 
-    const starterClients = users.filter((u) => u.plan === "starter" || !u.plan).length
-    const proClients = users.filter((u) => u.plan === "pro").length
-    const eliteClients = users.filter((u) => u.plan === "elite").length
+      const starterClients = users.filter((u) => u.plan === "starter" || !u.plan).length
+      const proClients = users.filter((u) => u.plan === "pro").length
+      const eliteClients = users.filter((u) => u.plan === "elite").length
 
-    // MRR calculation (one-time payment but shown as equivalent monthly)
-    const mrr = proClients * 500 + eliteClients * 1000
+      // MRR calculation (one-time payment but shown as equivalent monthly)
+      const mrr = proClients * 500 + eliteClients * 1000
 
-    setStats({
-      totalClients: users.length,
-      starterClients,
-      proClients,
-      eliteClients,
-      totalRDV: rdvs.length,
-      totalCalls: calls.length,
-      mrr,
-    })
+      setStats({
+        totalClients: users.length,
+        starterClients,
+        proClients,
+        eliteClients,
+        totalRDV: rdvs.length,
+        totalCalls: calls.length,
+        mrr,
+      })
+    }
+
+    load()
   }, [])
 
   const statCards = [

@@ -42,10 +42,10 @@ export default function StockPage() {
         loadItems()
     }, [])
 
-    const loadItems = () => {
-        const user = getCurrentUser()
+    const loadItems = async () => {
+        const user = await getCurrentUser()
         if (user) {
-            setItems(getStockItems(user.id))
+            setItems(await getStockItems(user.id))
         }
     }
 
@@ -57,16 +57,16 @@ export default function StockPage() {
         setFormIsActive(true)
     }
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!formName || !formPrice) {
             toast.error("Veuillez remplir les champs obligatoires")
             return
         }
 
-        const user = getCurrentUser()
+        const user = await getCurrentUser()
         if (!user) return
 
-        addStockItem({
+        await addStockItem({
             userId: user.id,
             name: formName,
             description: formDescription,
@@ -78,7 +78,7 @@ export default function StockPage() {
         toast.success("Article ajouté")
         setIsCreateOpen(false)
         resetForm()
-        loadItems()
+        await loadItems()
     }
 
     const handleEdit = (item: StockItem) => {
@@ -90,10 +90,10 @@ export default function StockPage() {
         setFormIsActive(item.isActive)
     }
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!editingItem) return
 
-        updateStockItem(editingItem.id, {
+        await updateStockItem(editingItem.id, {
             name: formName,
             description: formDescription,
             price: parseFloat(formPrice),
@@ -104,20 +104,20 @@ export default function StockPage() {
         toast.success("Article mis à jour")
         setEditingItem(null)
         resetForm()
-        loadItems()
+        await loadItems()
     }
 
-    const handleDelete = (item: StockItem) => {
+    const handleDelete = async (item: StockItem) => {
         if (confirm(`Supprimer "${item.name}" ?`)) {
-            deleteStockItem(item.id)
+            await deleteStockItem(item.id)
             toast.success("Article supprimé")
-            loadItems()
+            await loadItems()
         }
     }
 
-    const handleToggleActive = (item: StockItem) => {
-        updateStockItem(item.id, { isActive: !item.isActive })
-        loadItems()
+    const handleToggleActive = async (item: StockItem) => {
+        await updateStockItem(item.id, { isActive: !item.isActive })
+        await loadItems()
         toast.success(item.isActive ? "Article désactivé" : "Article activé")
     }
 

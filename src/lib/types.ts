@@ -13,6 +13,7 @@ export interface User {
   sector?: Sector
   plan?: Plan
   webhookUrl?: string
+  settings?: Record<string, unknown>
   createdAt: string
 }
 
@@ -77,6 +78,9 @@ export interface CallLog {
   duration?: number
   timestamp: string
   summary?: string
+  transcript?: string
+  recordingUrl?: string
+  sentiment?: "positive" | "neutral" | "urgent" | "negative" | string
   // Sector-specific metadata
   metadata?: Record<string, unknown>
 }

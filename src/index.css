@@ -8,24 +8,24 @@
   --font-mono: "JetBrains Mono", "Geist Mono", "Geist Mono Fallback", monospace;
 
   /* Using direct color values instead of hsl(var()) for proper Tailwind v4 support */
-  --color-background: #0f172a;
-  --color-foreground: #f8fafc;
-  --color-card: #1e293b;
-  --color-card-foreground: #f8fafc;
-  --color-popover: #1e293b;
-  --color-popover-foreground: #f8fafc;
+  --color-background: #02040a;
+  --color-foreground: #e2e8f0;
+  --color-card: rgba(255, 255, 255, 0.03);
+  --color-card-foreground: #e2e8f0;
+  --color-popover: rgba(255, 255, 255, 0.03);
+  --color-popover-foreground: #e2e8f0;
   --color-primary: #06b6d4;
   --color-primary-foreground: #0f172a;
-  --color-secondary: #334155;
-  --color-secondary-foreground: #f8fafc;
-  --color-muted: #475569;
+  --color-secondary: rgba(255, 255, 255, 0.04);
+  --color-secondary-foreground: #e2e8f0;
+  --color-muted: rgba(255, 255, 255, 0.03);
   --color-muted-foreground: #94a3b8;
   --color-accent: #06b6d4;
   --color-accent-foreground: #0f172a;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #f8fafc;
-  --color-border: #334155;
-  --color-input: #334155;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.08);
   --color-ring: #06b6d4;
   /* Added success and warning colors */
   --color-success: #22c55e;
@@ -41,13 +41,13 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
   --radius-xl: 1rem;
-  --color-sidebar: #1e293b;
-  --color-sidebar-foreground: #f8fafc;
+  --color-sidebar: rgba(255, 255, 255, 0.03);
+  --color-sidebar-foreground: #e2e8f0;
   --color-sidebar-primary: #06b6d4;
   --color-sidebar-primary-foreground: #0f172a;
-  --color-sidebar-accent: #334155;
-  --color-sidebar-accent-foreground: #f8fafc;
-  --color-sidebar-border: #334155;
+  --color-sidebar-accent: rgba(255, 255, 255, 0.04);
+  --color-sidebar-accent-foreground: #e2e8f0;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
   --color-sidebar-ring: #06b6d4;
 }
 
@@ -56,32 +56,55 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-muted-foreground;
     font-family: var(--font-sans);
   }
 }
 
+body {
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+body > #root {
+  position: relative;
+  z-index: 1;
+}
+
 /* Ultra-Premium Glassmorphism */
 .glass {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .glass-card {
-  background: rgba(51, 65, 85, 0.6);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .glass-strong {
-  background: rgba(30, 41, 59, 0.85);
+  background: rgba(2, 4, 10, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* Sector-specific neon accents */
@@ -147,6 +170,46 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(30px, -20px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-20px, 20px, 0) scale(0.95);
+  }
+}
+
+.animate-blob {
+  animation: blob 14s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out;
 }
 
 @keyframes shimmer {

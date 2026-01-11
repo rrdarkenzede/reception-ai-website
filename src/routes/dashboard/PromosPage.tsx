@@ -44,10 +44,10 @@ export default function PromosPage() {
         loadPromos()
     }, [])
 
-    const loadPromos = () => {
-        const user = getCurrentUser()
+    const loadPromos = async () => {
+        const user = await getCurrentUser()
         if (user) {
-            setPromos(getPromos(user.id))
+            setPromos(await getPromos(user.id))
         }
     }
 
@@ -62,16 +62,16 @@ export default function PromosPage() {
         setFormIsActive(true)
     }
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!formTitle || !formDiscount) {
             toast.error("Veuillez remplir les champs obligatoires")
             return
         }
 
-        const user = getCurrentUser()
+        const user = await getCurrentUser()
         if (!user) return
 
-        addPromo({
+        await addPromo({
             userId: user.id,
             title: formTitle,
             description: formDescription,
@@ -79,14 +79,14 @@ export default function PromosPage() {
             discount: parseFloat(formDiscount),
             discountType: formDiscountType,
             startDate: formStartDate,
-            endDate: formEndDate,
+            endDate: formEndDate || undefined,
             isActive: formIsActive,
         })
 
         toast.success("Promotion créée")
         setIsCreateOpen(false)
         resetForm()
-        loadPromos()
+        await loadPromos()
     }
 
     const handleEdit = (promo: Promo) => {
@@ -101,10 +101,10 @@ export default function PromosPage() {
         setFormIsActive(promo.isActive)
     }
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!editingPromo) return
 
-        updatePromo(editingPromo.id, {
+        await updatePromo(editingPromo.id, {
             title: formTitle,
             description: formDescription,
             code: formCode,
@@ -118,20 +118,20 @@ export default function PromosPage() {
         toast.success("Promotion mise à jour")
         setEditingPromo(null)
         resetForm()
-        loadPromos()
+        await loadPromos()
     }
 
-    const handleDelete = (promo: Promo) => {
+    const handleDelete = async (promo: Promo) => {
         if (confirm(`Supprimer "${promo.title}" ?`)) {
-            deletePromo(promo.id)
+            await deletePromo(promo.id)
             toast.success("Promotion supprimée")
-            loadPromos()
+            await loadPromos()
         }
     }
 
-    const handleToggleActive = (promo: Promo) => {
-        updatePromo(promo.id, { isActive: !promo.isActive })
-        loadPromos()
+    const handleToggleActive = async (promo: Promo) => {
+        await updatePromo(promo.id, { isActive: !promo.isActive })
+        await loadPromos()
         toast.success(promo.isActive ? "Promotion désactivée" : "Promotion activée")
     }
 
@@ -197,6 +197,12 @@ export default function PromosPage() {
                 </div>
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            Nouvelle Promo
+                        </Button>
+                    </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Créer une promotion</DialogTitle>

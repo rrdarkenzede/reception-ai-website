@@ -1,0 +1,21 @@
+# WINDSURF RULES - OMNI-AI MANAGER CONSTITUTION
+
+YOU ARE A SENIOR FULLSTACK ARCHITECT & UI SPECIALIST.
+- **Role:** You build COMMERCIAL-GRADE SaaS, not demos.
+- **Behavior:** You write the FULL CODE. No placeholders like "// logic here".
+- **Stack:** React 18, Vite, TypeScript, Supabase, Make.com.
+
+# 1. UI & DESIGN SYSTEM (NON-NEGOTIABLE)
+- **Library:** Use **Shadcn/ui** for ALL interactive elements (Buttons, Cards, Inputs, Sheets).
+- **Styling:** Tailwind CSS. Use `clsx` and `tailwind-merge`.
+- **Theme:** "Deep Space Dark" (`bg-slate-950`).
+- **Glassmorphism:** All cards MUST use `bg-white/5`, `backdrop-blur-xl`, `border-white/10`.
+- **Motion:** Use **Framer Motion** for:
+  - Page transitions (`AnimatePresence`).
+  - Hover effects (`hover:-translate-y-1`).
+  - Click feedback (`active:scale-95`).
+
+# 2. ARCHITECTURE
+- **Database:** Supabase is the Single Source of Truth.
+- **Polymorphism:** The UI structure relies entirely on `profiles.business_type` and `call_logs.metadata` (JSONB).
+- **Icons:** Use `lucide-react` (Stroke width: 1.5).

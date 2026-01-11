@@ -415,5 +415,123 @@ INSERT INTO call_logs (
     metadata = EXCLUDED.metadata;
 
 -- ============================================================================
+-- REQUIRED EXACT POLYMORPHIC METADATA (SPEC)
+-- ============================================================================
+
+-- Garage: { "car": "Audi RS6", "plate": "WIND-SURF", "status": "In Progress" }
+INSERT INTO call_logs (
+    id,
+    profile_id,
+    location_id,
+    caller_name,
+    caller_phone,
+    type,
+    status,
+    duration,
+    summary,
+    sentiment,
+    sentiment_score,
+    metadata,
+    created_at
+) VALUES (
+    '22222222-2222-2222-2222-666666666666',
+    '22222222-2222-2222-2222-222222222222',
+    '22222222-2222-2222-2222-333333333333',
+    'Client Garage Demo',
+    '+33 6 00 00 00 01',
+    'incoming',
+    'completed',
+    95,
+    'Seed: Garage metadata exact.',
+    'neutral',
+    5,
+    '{
+        "car": "Audi RS6",
+        "plate": "WIND-SURF",
+        "status": "In Progress"
+    }'::jsonb,
+    NOW() - INTERVAL '10 minutes'
+) ON CONFLICT (id) DO UPDATE SET
+    metadata = EXCLUDED.metadata,
+    sentiment = EXCLUDED.sentiment,
+    sentiment_score = EXCLUDED.sentiment_score;
+
+-- Resto: { "guests": 2, "dietary": "Vegan", "occasion": "Date Night" }
+INSERT INTO call_logs (
+    id,
+    profile_id,
+    location_id,
+    caller_name,
+    caller_phone,
+    type,
+    status,
+    duration,
+    summary,
+    sentiment,
+    sentiment_score,
+    metadata,
+    created_at
+) VALUES (
+    '11111111-1111-1111-1111-555555555555',
+    '11111111-1111-1111-1111-111111111111',
+    '11111111-1111-1111-1111-222222222222',
+    'Client Resto Demo',
+    '+33 6 00 00 00 02',
+    'incoming',
+    'completed',
+    80,
+    'Seed: Restaurant metadata exact.',
+    'positive',
+    8,
+    '{
+        "guests": 2,
+        "dietary": "Vegan",
+        "occasion": "Date Night"
+    }'::jsonb,
+    NOW() - INTERVAL '12 minutes'
+) ON CONFLICT (id) DO UPDATE SET
+    metadata = EXCLUDED.metadata,
+    sentiment = EXCLUDED.sentiment,
+    sentiment_score = EXCLUDED.sentiment_score;
+
+-- Medical: { "symptom": "Chest Pain", "urgent": true, "history": "Cardiac" }
+INSERT INTO call_logs (
+    id,
+    profile_id,
+    location_id,
+    caller_name,
+    caller_phone,
+    type,
+    status,
+    duration,
+    summary,
+    sentiment,
+    sentiment_score,
+    metadata,
+    created_at
+) VALUES (
+    '33333333-3333-3333-3333-666666666666',
+    '33333333-3333-3333-3333-333333333333',
+    '33333333-3333-3333-3333-444444444444',
+    'Patient Demo',
+    '+33 6 00 00 00 03',
+    'incoming',
+    'completed',
+    110,
+    'Seed: Medical metadata exact.',
+    'urgent',
+    2,
+    '{
+        "symptom": "Chest Pain",
+        "urgent": true,
+        "history": "Cardiac"
+    }'::jsonb,
+    NOW() - INTERVAL '8 minutes'
+) ON CONFLICT (id) DO UPDATE SET
+    metadata = EXCLUDED.metadata,
+    sentiment = EXCLUDED.sentiment,
+    sentiment_score = EXCLUDED.sentiment_score;
+
+-- ============================================================================
 -- SEED DATA COMPLETE
 -- ============================================================================

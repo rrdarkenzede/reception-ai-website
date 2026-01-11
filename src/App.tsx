@@ -15,11 +15,14 @@ import TermsPage from '@/routes/legal/TermsPage'
 // Dashboard
 import DashboardLayout from '@/routes/dashboard/DashboardLayout'
 import DashboardPage from '@/routes/dashboard/DashboardPage'
+import BookingsPage from '@/routes/dashboard/BookingsPage'
 import ReservationsPage from '@/routes/dashboard/ReservationsPage'
 import CallsPage from '@/routes/dashboard/CallsPage'
 import StockPage from '@/routes/dashboard/StockPage'
 import PromosPage from '@/routes/dashboard/PromosPage'
 import SettingsPage from '@/routes/dashboard/SettingsPage'
+
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 // Admin
 import AdminLayout from '@/routes/admin/AdminLayout'
@@ -42,8 +45,16 @@ function App() {
         <Route path="/legal/terms" element={<TermsPage />} />
 
         {/* Dashboard (authenticated users) */}
-        <Route path="/dashboard/*" element={<DashboardLayout />}>
+        <Route
+          path="/dashboard/*"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardPage />} />
+          <Route path="bookings" element={<BookingsPage />} />
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="calls" element={<CallsPage />} />
           <Route path="stock" element={<StockPage />} />

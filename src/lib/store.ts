@@ -1,7 +1,29 @@
 import { supabase } from "./supabase"
 import type { User, RDV, StockItem, Promo, CallLog } from "./types"
 
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v)
+
+const asString = (v: unknown, fallback = ""): string =>
+  typeof v === "string" ? v : fallback
+
+const asOptionalString = (v: unknown): string | undefined =>
+  typeof v === "string" ? v : undefined
+
+const asNumber = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isFinite(v) ? v : undefined
+
 // --- User / Auth ---
+
+export const login = async (email: string, password: string): Promise<User | null> => {
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) return null
+  return await getCurrentUser()
+}
+
+export const logout = async () => {
+  await supabase.auth.signOut()
+}
 
 export const getCurrentUser = async (): Promise<User | null> => {
   const { data: { session }, error: authError } = await supabase.auth.getSession()
@@ -74,7 +96,7 @@ export const createUser = async (user: Partial<User>) => {
 
 export const updateUser = async (id: string, updates: Partial<User>) => {
   // Map User updates to profile columns
-  const profileUpdates: any = {}
+  const profileUpdates: Record<string, unknown> = {}
   if (updates.name) profileUpdates.name = updates.name
   if (updates.companyName) profileUpdates.company_name = updates.companyName
   if (updates.sector) profileUpdates.business_type = updates.sector
@@ -118,20 +140,55 @@ export const getRDVs = async (userId: string): Promise<RDV[]> => {
     return []
   }
 
-  // Map DB booking to RDV
-  return data.map((b: any) => ({
-    id: b.id,
-    userId: b.profile_id,
-    clientName: b.client_name,
-    email: b.email,
-    phone: b.phone,
-    date: b.date,
-    time: b.time,
-    status: b.status,
-    notes: b.internal_notes,
-    // Spread metadata for specific fields
-    ...b.metadata
-  }))
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((b) => {
+      const meta = isRecord(b.metadata) ? b.metadata : {}
+
+      return {
+        id: asString(b.id),
+        userId: asString(b.profile_id),
+        clientName: asString(b.client_name, "Inconnu"),
+        email: typeof b.email === "string" ? b.email : undefined,
+        phone: typeof b.phone === "string" ? b.phone : undefined,
+        date: asString(b.date),
+        time: asString(b.time),
+        status: asString(b.status) as RDV["status"],
+        notes: typeof b.internal_notes === "string" ? b.internal_notes : undefined,
+        ...meta,
+      } as RDV
+    })
+}
+
+export const getAllRDVs = async (): Promise<RDV[]> => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .order('date', { ascending: false })
+
+  if (error) {
+    console.error("Error fetching bookings:", error)
+    return []
+  }
+
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((b) => {
+      const meta = isRecord(b.metadata) ? b.metadata : {}
+
+      return {
+        id: asString(b.id),
+        userId: asString(b.profile_id),
+        clientName: asString(b.client_name, "Inconnu"),
+        email: typeof b.email === "string" ? b.email : undefined,
+        phone: typeof b.phone === "string" ? b.phone : undefined,
+        date: asString(b.date),
+        time: asString(b.time),
+        status: asString(b.status) as RDV["status"],
+        notes: typeof b.internal_notes === "string" ? b.internal_notes : undefined,
+        ...meta,
+      } as RDV
+    })
 }
 
 export const addRDV = async (rdv: Partial<RDV>) => {
@@ -165,7 +222,7 @@ export const addRDV = async (rdv: Partial<RDV>) => {
 
 export const updateRDV = async (id: string, updates: Partial<RDV>) => {
   // Fetch current metadata to merge? Simple map for now.
-  const dbUpdates: any = {}
+  const dbUpdates: Record<string, unknown> = {}
   if (updates.clientName) dbUpdates.client_name = updates.clientName
   if (updates.email) dbUpdates.email = updates.email
   if (updates.phone) dbUpdates.phone = updates.phone
@@ -199,17 +256,18 @@ export const getStockItems = async (userId: string): Promise<StockItem[]> => {
     return []
   }
 
-  // Map data
-  return data.map((d: any) => ({
-    id: d.id,
-    userId: d.user_id,
-    name: d.name,
-    description: d.description,
-    price: d.price,
-    category: d.category,
-    isActive: d.is_active,
-    imageUrl: d.image_url
-  }))
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((d) => ({
+      id: asString(d.id),
+      userId: asString(d.user_id),
+      name: asString(d.name),
+      description: typeof d.description === "string" ? d.description : undefined,
+      price: asNumber(d.price),
+      category: typeof d.category === "string" ? d.category : undefined,
+      isActive: typeof d.is_active === "boolean" ? d.is_active : true,
+      imageUrl: typeof d.image_url === "string" ? d.image_url : undefined,
+    }))
 }
 
 export const addStockItem = async (item: Partial<StockItem>) => {
@@ -226,7 +284,7 @@ export const addStockItem = async (item: Partial<StockItem>) => {
 }
 
 export const updateStockItem = async (id: string, updates: Partial<StockItem>) => {
-  const dbUpdates: any = {}
+  const dbUpdates: Record<string, unknown> = {}
   if (updates.name) dbUpdates.name = updates.name
   if (updates.description) dbUpdates.description = updates.description
   if (updates.price) dbUpdates.price = updates.price
@@ -255,18 +313,20 @@ export const getPromos = async (userId: string): Promise<Promo[]> => {
     return []
   }
 
-  return data.map((d: any) => ({
-    id: d.id,
-    userId: d.user_id,
-    title: d.title,
-    description: d.description,
-    code: d.code,
-    discount: d.discount,
-    discountType: d.discount_type,
-    startDate: d.start_date,
-    endDate: d.end_date,
-    isActive: d.is_active
-  }))
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((d) => ({
+      id: asString(d.id),
+      userId: asString(d.user_id),
+      title: asString(d.title),
+      description: typeof d.description === "string" ? d.description : undefined,
+      code: typeof d.code === "string" ? d.code : "",
+      discount: typeof d.discount === "number" ? d.discount : 0,
+      discountType: asString(d.discount_type) as Promo["discountType"],
+      startDate: asString(d.start_date),
+      endDate: typeof d.end_date === "string" ? d.end_date : undefined,
+      isActive: typeof d.is_active === "boolean" ? d.is_active : true,
+    }))
 }
 
 export const addPromo = async (promo: Partial<Promo>) => {
@@ -285,7 +345,7 @@ export const addPromo = async (promo: Partial<Promo>) => {
 }
 
 export const updatePromo = async (id: string, updates: Partial<Promo>) => {
-  const dbUpdates: any = {}
+  const dbUpdates: Record<string, unknown> = {}
   if (updates.title) dbUpdates.title = updates.title
   if (updates.description) dbUpdates.description = updates.description
   if (updates.code) dbUpdates.code = updates.code
@@ -318,18 +378,61 @@ export const getCallLogs = async (userId: string): Promise<CallLog[]> => {
     return []
   }
 
-  return data.map((c: any) => ({
-    id: c.id,
-    userId: c.profile_id,
-    clientName: c.caller_name || c.metadata?.caller_name || "Inconnu",
-    phone: c.caller_phone || "Masqué",
-    type: c.type,
-    status: c.status,
-    duration: c.duration,
-    timestamp: c.created_at,
-    summary: c.transcript || c.metadata?.summary,
-    metadata: c.metadata
-  }))
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((c) => {
+      const meta = isRecord(c.metadata) ? c.metadata : undefined
+
+      return {
+        id: asString(c.id),
+        userId: asString(c.profile_id),
+        clientName: asString(c.caller_name, asString(meta?.caller_name, "Inconnu")),
+        phone: asString(c.caller_phone, "Masqué"),
+        type: asString(c.type) as CallLog["type"],
+        status: asString(c.status) as CallLog["status"],
+        duration: asNumber(c.duration),
+        timestamp: asString(c.created_at),
+        summary: asOptionalString(c.summary) ?? asOptionalString(meta?.summary),
+        transcript: typeof c.transcript === "string" ? c.transcript : undefined,
+        recordingUrl: typeof c.recording_url === "string" ? c.recording_url : undefined,
+        sentiment: typeof c.sentiment === "string" ? c.sentiment : undefined,
+        metadata: meta,
+      }
+    })
+}
+
+export const getAllCallLogs = async (): Promise<CallLog[]> => {
+  const { data, error } = await supabase
+    .from('call_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error("Error fetching calls:", error)
+    return []
+  }
+
+  return data
+    .map((row: unknown) => (isRecord(row) ? row : {}))
+    .map((c) => {
+      const meta = isRecord(c.metadata) ? c.metadata : undefined
+
+      return {
+        id: asString(c.id),
+        userId: asString(c.profile_id),
+        clientName: asString(c.caller_name, asString(meta?.caller_name, "Inconnu")),
+        phone: asString(c.caller_phone, "Masqué"),
+        type: asString(c.type) as CallLog["type"],
+        status: asString(c.status) as CallLog["status"],
+        duration: asNumber(c.duration),
+        timestamp: asString(c.created_at),
+        summary: asOptionalString(c.summary) ?? asOptionalString(meta?.summary),
+        transcript: typeof c.transcript === "string" ? c.transcript : undefined,
+        recordingUrl: typeof c.recording_url === "string" ? c.recording_url : undefined,
+        sentiment: typeof c.sentiment === "string" ? c.sentiment : undefined,
+        metadata: meta,
+      }
+    })
 }
 
 export const addCallLog = async (log: Partial<CallLog>) => {

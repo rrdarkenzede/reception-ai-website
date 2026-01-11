@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import {
   CarFront,
   Utensils,
-  Stethoscope,
+  Activity,
   Scissors,
   Hammer,
   Home,
@@ -64,31 +64,31 @@ export interface BusinessConfigResult {
 
 const THEME_CONFIGS: Record<string, ThemeColors> = {
   automotive: {
-    primary: '#facc15',      // Yellow-400
-    secondary: '#64748b',    // Slate-500
-    accent: '#eab308',       // Yellow-500
-    border: '#fde047',       // Yellow-300
-    background: '#1e1b4b',   // Dark background
-    text: '#fef9c3',         // Yellow-100
+    primary: '#FACC15',
+    secondary: '#64748b',
+    accent: '#EAB308',
+    border: '#FDE047',
+    background: '#0b0f1a',
+    text: '#fef9c3',
     glow: '0 0 20px rgba(250, 204, 21, 0.5)',
   },
   restaurant: {
-    primary: '#f97316',      // Orange-500
-    secondary: '#ef4444',    // Red-500
-    accent: '#fb923c',       // Orange-400
-    border: '#fdba74',       // Orange-300
-    background: '#1c1917',   // Stone-900
-    text: '#ffedd5',         // Orange-100
-    glow: '0 0 20px rgba(249, 115, 22, 0.5)',
+    primary: '#FB923C',
+    secondary: '#ea580c',
+    accent: '#FDBA74',
+    border: '#FED7AA',
+    background: '#0b0f1a',
+    text: '#ffedd5',
+    glow: '0 0 20px rgba(251, 146, 60, 0.5)',
   },
   medical: {
-    primary: '#06b6d4',      // Cyan-500
-    secondary: '#14b8a6',    // Teal-500
-    accent: '#22d3ee',       // Cyan-400
-    border: '#67e8f9',       // Cyan-300
-    background: '#042f2e',   // Teal-950
-    text: '#ccfbf1',         // Teal-100
-    glow: '0 0 20px rgba(6, 182, 212, 0.5)',
+    primary: '#2DD4BF',
+    secondary: '#0f766e',
+    accent: '#5eead4',
+    border: '#99f6e4',
+    background: '#0b0f1a',
+    text: '#ccfbf1',
+    glow: '0 0 20px rgba(45, 212, 191, 0.5)',
   },
   beauty: {
     primary: '#ec4899',      // Pink-500
@@ -126,7 +126,7 @@ const THEME_CONFIGS: Record<string, ThemeColors> = {
 const ICON_MAP: Record<string, { primary: LucideIcon; secondary: LucideIcon }> = {
   automotive: { primary: CarFront, secondary: Wrench },
   restaurant: { primary: Utensils, secondary: Calendar },
-  medical: { primary: Stethoscope, secondary: AlertTriangle },
+  medical: { primary: Activity, secondary: AlertTriangle },
   beauty: { primary: Scissors, secondary: Calendar },
   trades: { primary: Hammer, secondary: Wrench },
   real_estate: { primary: Home, secondary: Users },
@@ -180,8 +180,8 @@ const VOCABULARY_MAP: Record<string, { label: string; client: string; booking: s
 // ============================================================================
 
 function formatAutomotiveMetadata(json: Record<string, unknown>): FormattedMetadata {
-  const car = json.car as string | undefined;
-  const plate = json.plate as string | undefined;
+  const carModel = (json.car_model as string | undefined) || (json.vehicle_model as string | undefined) || (json.car as string | undefined);
+  const licensePlate = (json.license_plate as string | undefined) || (json.plate as string | undefined);
   const issue = json.issue as string | undefined;
   const mileage = json.mileage as number | undefined;
   const estimatedCost = json.estimated_cost as number | undefined;
@@ -192,8 +192,8 @@ function formatAutomotiveMetadata(json: Record<string, unknown>): FormattedMetad
   if (estimatedCost) details.push({ label: 'Estimation', value: `${estimatedCost}€` });
 
   return {
-    title: car || 'Véhicule inconnu',
-    badge: plate,
+    title: carModel || 'Véhicule inconnu',
+    badge: licensePlate,
     icon: 'Wrench',
     details,
   };
@@ -218,7 +218,7 @@ function formatMedicalMetadata(json: Record<string, unknown>): FormattedMetadata
     return {
       title: symptom || 'Urgence médicale',
       badge: painLevel ? `Douleur: ${painLevel}/10` : undefined,
-      alert: 'HAUTE PRIORITÉ',
+      alert: 'URGENT',
       style: 'pulse-red',
       icon: 'AlertTriangle',
       details,
@@ -228,7 +228,7 @@ function formatMedicalMetadata(json: Record<string, unknown>): FormattedMetadata
   return {
     title: symptom || 'Consultation',
     badge: painLevel ? `Niveau: ${painLevel}/10` : undefined,
-    icon: 'Stethoscope',
+    icon: 'Activity',
     details,
   };
 }
@@ -248,7 +248,7 @@ function formatRestaurantMetadata(json: Record<string, unknown>): FormattedMetad
   }
 
   return {
-    title: guests ? `${guests} Convives` : 'Réservation',
+    title: typeof guests === 'number' ? `Table for ${guests}` : 'Table for -',
     badge: dietary || undefined,
     icon: 'Utensils',
     details,

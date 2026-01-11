@@ -22,8 +22,8 @@ export function ClientNavbar({ user, onPanicClick, isPaused }: ClientNavbarProps
   const navigate = useNavigate()
   const sector = SECTORS.find((s) => s.value === user.sector)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate("/login")
   }
 
