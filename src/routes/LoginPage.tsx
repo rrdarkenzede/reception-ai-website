@@ -38,17 +38,26 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
+    console.log('Tentative de connexion avec:', email, '***')
 
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (error) {
+        console.error('Erreur de connexion Supabase:', error)
+        throw error
+      }
+
+      console.log('Connexion réussie:', data)
       navigate("/dashboard", { replace: true })
-    } catch {
+    } catch (err) {
+      console.error('Erreur inattendue:', err)
       toast.error("Email ou mot de passe incorrect")
       setShake(true)
       window.setTimeout(() => setShake(false), 400)
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   return (
