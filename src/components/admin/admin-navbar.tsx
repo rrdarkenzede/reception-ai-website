@@ -1,12 +1,11 @@
-"use client"
 
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { LogOut, Users, TrendingUp, DollarSign } from "lucide-react"
 import { logout, getUsers, getRDVs } from "@/lib/store"
 
 export function AdminNavbar() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const users = getUsers()
   const rdvs = getRDVs()
   const totalRevenue = users.reduce((acc, u) => {
@@ -17,7 +16,7 @@ export function AdminNavbar() {
 
   const handleLogout = () => {
     logout()
-    router.push("/login")
+    navigate("/login")
   }
 
   return (

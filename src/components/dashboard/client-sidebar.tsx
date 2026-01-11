@@ -97,7 +97,51 @@ const sectorMenus: Record<Sector, { icon: any; label: string; href: string; minP
     { icon: Phone, label: "Appels", href: "/dashboard/calls" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ],
+  // Mappings for older English keys to French menus
+  beauty: [], // Self-referencing not allowed in object init, so we duplicate or assign later. We'll duplicate for simplicity.
+  fitness: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
+  medical: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
+  legal: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Consultations", href: "/dashboard/reservations" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
+  real_estate: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Visites", href: "/dashboard/reservations" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
+  automotive: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Wrench, label: "Réparations", href: "/dashboard/reservations" },
+    { icon: Car, label: "Véhicules", href: "/dashboard/vehicles", minPlan: "pro" },
+    { icon: ClipboardList, label: "Pièces", href: "/dashboard/stock", minPlan: "pro" },
+    { icon: FileText, label: "Devis", href: "/dashboard/quotes", minPlan: "pro" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
+  trades: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Interventions", href: "/dashboard/reservations" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
 }
+
+// Assign 'beauty' to match 'beaute' exactly since we couldn't reference it inside
+sectorMenus.beauty = sectorMenus.beaute;
 
 const planOrder: Plan[] = ["starter", "pro", "elite"]
 
@@ -128,19 +172,7 @@ export function ClientSidebar({ sector, plan }: ClientSidebarProps) {
           const hasAccess = canAccess(item.minPlan)
 
           if (!hasAccess) {
-            return (
-              <div
-                key={item.href}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground/50 cursor-not-allowed"
-                title={`Nécessite le plan ${item.minPlan?.toUpperCase()}`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-                <span className="ml-auto text-xs bg-secondary/50 px-1.5 py-0.5 rounded">
-                  {item.minPlan?.toUpperCase()}
-                </span>
-              </div>
-            )
+            return null
           }
 
           return (
@@ -159,7 +191,7 @@ export function ClientSidebar({ sector, plan }: ClientSidebarProps) {
             </Link>
           )
         })}
-      </nav>
-    </aside>
+      </nav >
+    </aside >
   )
 }

@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "client"
 export type Plan = "starter" | "pro" | "elite"
-export type BusinessType = "restaurant" | "beauty" | "fitness" | "medical" | "legal" | "real_estate" | "automotive" | "trades"
+export type BusinessType = "restaurant" | "beauty" | "fitness" | "medical" | "legal" | "real_estate" | "automotive" | "trades" | "dentiste" | "garage" | "immobilier" | "juridique" | "beaute" | "sport" | "autoecole" | "veterinaire" | "clinique";
 export type Sector = BusinessType // Legacy alias for compatibility
 
 export interface User {
@@ -12,6 +12,7 @@ export interface User {
   role: UserRole
   sector?: Sector
   plan?: Plan
+  webhookUrl?: string
   createdAt: string
 }
 

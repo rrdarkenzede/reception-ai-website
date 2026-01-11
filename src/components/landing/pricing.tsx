@@ -1,6 +1,7 @@
+
 import { Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { PLANS } from "@/lib/types"
 
 const allFeatures = [
@@ -42,9 +43,8 @@ export function Pricing() {
             return (
               <div
                 key={plan.value}
-                className={`relative glass-card rounded-2xl p-8 flex flex-col ${
-                  isPopular ? "scale-105 border-primary/50 glow-cyan" : "border-border/30"
-                }`}
+                className={`relative glass-card rounded-2xl p-8 flex flex-col ${isPopular ? "scale-105 border-primary/50 glow-cyan" : "border-border/30"
+                  }`}
               >
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-full">
@@ -66,9 +66,8 @@ export function Pricing() {
                     return (
                       <li
                         key={feature}
-                        className={`flex items-start gap-2 text-sm ${
-                          hasFeature ? "text-foreground" : "text-muted-foreground/50"
-                        }`}
+                        className={`flex items-start gap-2 text-sm ${hasFeature ? "text-foreground" : "text-muted-foreground/50"
+                          }`}
                       >
                         {hasFeature ? (
                           <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
@@ -81,11 +80,10 @@ export function Pricing() {
                   })}
                 </ul>
 
-                <Link href="/login?tab=signup" className="mt-8">
+                <Link to="/login?tab=signup" className="mt-8">
                   <Button
-                    className={`w-full ${
-                      isPopular ? "bg-primary hover:bg-primary/90" : "bg-secondary hover:bg-secondary/80"
-                    }`}
+                    className={`w-full ${isPopular ? "bg-primary hover:bg-primary/90" : "bg-secondary hover:bg-secondary/80"
+                      }`}
                   >
                     {plan.price === 0 ? "Commencer" : "Choisir ce Plan"}
                   </Button>

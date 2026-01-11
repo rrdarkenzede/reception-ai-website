@@ -1,935 +1,354 @@
+import { supabase } from "./supabase"
 import type { User, RDV, StockItem, Promo, CallLog } from "./types"
 
-const STORAGE_KEY = "receptionai_data"
+// --- User / Auth ---
 
-interface AppState {
-  users: User[]
-  rdvs: RDV[]
-  stockItems: StockItem[]
-  promos: Promo[]
-  callLogs: CallLog[]
-  currentUserId: string | null
+export const getCurrentUser = async (): Promise<User | null> => {
+  const { data: { session }, error: authError } = await supabase.auth.getSession()
+  if (authError || !session?.user) return null
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single()
+
+  if (error || !profile) return null
+
+  // Map DB profile to User type
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.name, // Ensure profile has name
+    password: "", // Not stored in profile, handled by Auth
+    companyName: profile.company_name,
+    role: profile.settings?.role || "client",
+    sector: profile.business_type,
+    plan: profile.tier,
+    settings: profile.settings,
+    webhookUrl: profile.webhook_url,
+    createdAt: profile.created_at,
+  } as User
 }
 
-const defaultUsers: User[] = [
-  {
-    id: "admin-1",
-    email: "admin@receptionai.com",
-    password: "admin123",
-    name: "Super Admin",
-    role: "admin",
-    createdAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: "user-luigi",
-    email: "luigi@luigipizza.it",
-    password: "pizza123",
-    name: "Luigi Rossi",
-    companyName: "Luigi Pizza",
-    role: "client",
-    sector: "restaurant",
-    plan: "pro",
-    createdAt: "2024-06-15T00:00:00Z",
-  },
-  {
-    id: "user-dupont",
-    email: "dupont@dentiste.fr",
-    password: "dupont123",
-    name: "Dr. Jean Dupont",
-    companyName: "Cabinet Dentaire Dupont",
-    role: "client",
-    sector: "dentiste",
-    plan: "starter",
-    createdAt: "2024-07-20T00:00:00Z",
-  },
-  {
-    id: "user-garage",
-    email: "garage@dupont.com",
-    password: "garage123",
-    name: "Pierre Dupont",
-    companyName: "Garage Dupont",
-    role: "client",
-    sector: "garage",
-    plan: "elite",
-    createdAt: "2024-08-10T00:00:00Z",
-  },
-]
+export const getUsers = async (): Promise<User[]> => {
+  // Admin only - fetch all profiles
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('*')
 
-const defaultRDVs: RDV[] = [
-  // Luigi Pizza RDVs
-  {
-    id: "rdv-1",
-    userId: "user-luigi",
-    clientName: "Marie Martin",
-    phone: "+33612345678",
-    date: "2026-01-10",
-    time: "19:00",
-    status: "confirmed",
-    guests: 4,
-    tableId: "table-3",
-    notes: "Anniversaire",
-  },
-  {
-    id: "rdv-2",
-    userId: "user-luigi",
-    clientName: "Paul Bernard",
-    phone: "+33623456789",
-    date: "2026-01-10",
-    time: "20:00",
-    status: "pending",
-    guests: 2,
-    tableId: "table-1",
-  },
-  {
-    id: "rdv-3",
-    userId: "user-luigi",
-    clientName: "Sophie Leroy",
-    phone: "+33634567890",
-    date: "2026-01-10",
-    time: "20:30",
-    status: "confirmed",
-    guests: 6,
-    tableId: "table-5",
-    notes: "Repas d'affaires",
-  },
-  {
-    id: "rdv-4",
-    userId: "user-luigi",
-    clientName: "Jean Moreau",
-    phone: "+33645678901",
-    date: "2026-01-11",
-    time: "12:30",
-    status: "confirmed",
-    guests: 3,
-    tableId: "table-2",
-  },
-  {
-    id: "rdv-5",
-    userId: "user-luigi",
-    clientName: "Claire Petit",
-    phone: "+33656789012",
-    date: "2026-01-11",
-    time: "19:30",
-    status: "pending",
-    guests: 2,
-    tableId: "table-4",
-  },
-  {
-    id: "rdv-6",
-    userId: "user-luigi",
-    clientName: "Marc Durand",
-    phone: "+33667890123",
-    date: "2026-01-12",
-    time: "20:00",
-    status: "cancelled",
-    guests: 4,
-    tableId: "table-3",
-  },
-  {
-    id: "rdv-7",
-    userId: "user-luigi",
-    clientName: "Anne Simon",
-    phone: "+33678901234",
-    date: "2026-01-09",
-    time: "19:00",
-    status: "completed",
-    guests: 2,
-    tableId: "table-1",
-  },
-  {
-    id: "rdv-8",
-    userId: "user-luigi",
-    clientName: "Lucas Robert",
-    phone: "+33689012345",
-    date: "2026-01-09",
-    time: "20:30",
-    status: "completed",
-    guests: 5,
-    tableId: "table-6",
-  },
-  {
-    id: "rdv-9",
-    userId: "user-luigi",
-    clientName: "Emma Richard",
-    phone: "+33690123456",
-    date: "2026-01-13",
-    time: "19:00",
-    status: "pending",
-    guests: 4,
-    tableId: "table-3",
-  },
-  {
-    id: "rdv-10",
-    userId: "user-luigi",
-    clientName: "Hugo Michel",
-    phone: "+33601234567",
-    date: "2026-01-13",
-    time: "20:00",
-    status: "confirmed",
-    guests: 2,
-    tableId: "table-2",
-  },
-  {
-    id: "rdv-11",
-    userId: "user-luigi",
-    clientName: "Léa Garcia",
-    phone: "+33612345670",
-    date: "2026-01-14",
-    time: "12:00",
-    status: "pending",
-    guests: 3,
-    tableId: "table-4",
-  },
-  {
-    id: "rdv-12",
-    userId: "user-luigi",
-    clientName: "Thomas Martinez",
-    phone: "+33623456781",
-    date: "2026-01-14",
-    time: "19:30",
-    status: "confirmed",
-    guests: 6,
-    tableId: "table-5",
-  },
-  // Dr Dupont RDVs
-  {
-    id: "rdv-d1",
-    userId: "user-dupont",
-    patientName: "Alice Blanc",
-    clientName: "Alice Blanc",
-    phone: "+33712345678",
-    date: "2026-01-10",
-    time: "09:00",
-    status: "confirmed",
-    serviceType: "Détartrage",
-    roomId: "salle-1",
-  },
-  {
-    id: "rdv-d2",
-    userId: "user-dupont",
-    patientName: "Robert Noir",
-    clientName: "Robert Noir",
-    phone: "+33723456789",
-    date: "2026-01-10",
-    time: "10:00",
-    status: "pending",
-    serviceType: "Consultation",
-    roomId: "salle-2",
-  },
-  {
-    id: "rdv-d3",
-    userId: "user-dupont",
-    patientName: "Julie Gris",
-    clientName: "Julie Gris",
-    phone: "+33734567890",
-    date: "2026-01-10",
-    time: "11:00",
-    status: "confirmed",
-    serviceType: "Extraction",
-    roomId: "salle-1",
-    medicalNotes: "Patient anxieux",
-  },
-  {
-    id: "rdv-d4",
-    userId: "user-dupont",
-    patientName: "Michel Vert",
-    clientName: "Michel Vert",
-    phone: "+33745678901",
-    date: "2026-01-11",
-    time: "09:30",
-    status: "pending",
-    serviceType: "Plombage",
-    roomId: "salle-2",
-  },
-  {
-    id: "rdv-d5",
-    userId: "user-dupont",
-    patientName: "Sophie Rouge",
-    clientName: "Sophie Rouge",
-    phone: "+33756789012",
-    date: "2026-01-11",
-    time: "14:00",
-    status: "confirmed",
-    serviceType: "Détartrage",
-    roomId: "salle-1",
-  },
-  {
-    id: "rdv-d6",
-    userId: "user-dupont",
-    patientName: "Pierre Jaune",
-    clientName: "Pierre Jaune",
-    phone: "+33767890123",
-    date: "2026-01-09",
-    time: "10:00",
-    status: "completed",
-    serviceType: "Consultation",
-    roomId: "salle-1",
-  },
-  {
-    id: "rdv-d7",
-    userId: "user-dupont",
-    patientName: "Marie Bleu",
-    clientName: "Marie Bleu",
-    phone: "+33778901234",
-    date: "2026-01-09",
-    time: "15:00",
-    status: "completed",
-    serviceType: "Blanchiment",
-    roomId: "salle-2",
-  },
-  {
-    id: "rdv-d8",
-    userId: "user-dupont",
-    patientName: "Luc Orange",
-    clientName: "Luc Orange",
-    phone: "+33789012345",
-    date: "2026-01-12",
-    time: "09:00",
-    status: "pending",
-    serviceType: "Extraction",
-    roomId: "salle-1",
-  },
-  // Garage Dupont RDVs
-  {
-    id: "rdv-g1",
-    userId: "user-garage",
-    clientName: "Jean Auto",
-    phone: "+33812345678",
-    date: "2026-01-10",
-    time: "08:00",
-    status: "in_progress",
-    vehicleBrand: "Audi",
-    vehicleModel: "A3",
-    licensePlate: "AB-123-CD",
-    repairType: "Révision complète",
-    estimatedCost: 450,
-  },
-  {
-    id: "rdv-g2",
-    userId: "user-garage",
-    clientName: "Marie Voiture",
-    phone: "+33823456789",
-    date: "2026-01-10",
-    time: "10:00",
-    status: "confirmed",
-    vehicleBrand: "Peugeot",
-    vehicleModel: "308",
-    licensePlate: "EF-456-GH",
-    repairType: "Changement pneus",
-    estimatedCost: 320,
-  },
-  {
-    id: "rdv-g3",
-    userId: "user-garage",
-    clientName: "Paul Moto",
-    phone: "+33834567890",
-    date: "2026-01-10",
-    time: "14:00",
-    status: "pending",
-    vehicleBrand: "Renault",
-    vehicleModel: "Clio",
-    licensePlate: "IJ-789-KL",
-    repairType: "Freins",
-    estimatedCost: 280,
-  },
-  {
-    id: "rdv-g4",
-    userId: "user-garage",
-    clientName: "Claire Camion",
-    phone: "+33845678901",
-    date: "2026-01-11",
-    time: "08:30",
-    status: "confirmed",
-    vehicleBrand: "BMW",
-    vehicleModel: "Serie 3",
-    licensePlate: "MN-012-OP",
-    repairType: "Vidange",
-    estimatedCost: 120,
-  },
-  {
-    id: "rdv-g5",
-    userId: "user-garage",
-    clientName: "Marc Tracteur",
-    phone: "+33856789012",
-    date: "2026-01-11",
-    time: "11:00",
-    status: "pending",
-    vehicleBrand: "Mercedes",
-    vehicleModel: "Classe A",
-    licensePlate: "QR-345-ST",
-    repairType: "Diagnostic",
-    estimatedCost: 80,
-  },
-  {
-    id: "rdv-g6",
-    userId: "user-garage",
-    clientName: "Anne Bus",
-    phone: "+33867890123",
-    date: "2026-01-09",
-    time: "09:00",
-    status: "completed",
-    vehicleBrand: "Volkswagen",
-    vehicleModel: "Golf",
-    licensePlate: "UV-678-WX",
-    repairType: "Révision",
-    estimatedCost: 380,
-  },
-  {
-    id: "rdv-g7",
-    userId: "user-garage",
-    clientName: "Lucas Van",
-    phone: "+33878901234",
-    date: "2026-01-09",
-    time: "14:00",
-    status: "completed",
-    vehicleBrand: "Toyota",
-    vehicleModel: "Yaris",
-    licensePlate: "YZ-901-AB",
-    repairType: "Climatisation",
-    estimatedCost: 250,
-  },
-  {
-    id: "rdv-g8",
-    userId: "user-garage",
-    clientName: "Emma Scooter",
-    phone: "+33889012345",
-    date: "2026-01-12",
-    time: "08:00",
-    status: "pending",
-    vehicleBrand: "Ford",
-    vehicleModel: "Focus",
-    licensePlate: "CD-234-EF",
-    repairType: "Embrayage",
-    estimatedCost: 650,
-  },
-  {
-    id: "rdv-g9",
-    userId: "user-garage",
-    clientName: "Hugo Vélo",
-    phone: "+33890123456",
-    date: "2026-01-12",
-    time: "10:00",
-    status: "confirmed",
-    vehicleBrand: "Citroen",
-    vehicleModel: "C3",
-    licensePlate: "GH-567-IJ",
-    repairType: "Batterie",
-    estimatedCost: 180,
-  },
-  {
-    id: "rdv-g10",
-    userId: "user-garage",
-    clientName: "Léa Roller",
-    phone: "+33801234567",
-    date: "2026-01-13",
-    time: "09:00",
-    status: "pending",
-    vehicleBrand: "Nissan",
-    vehicleModel: "Qashqai",
-    licensePlate: "KL-890-MN",
-    repairType: "Courroie distribution",
-    estimatedCost: 550,
-  },
-  {
-    id: "rdv-g11",
-    userId: "user-garage",
-    clientName: "Thomas Skate",
-    phone: "+33812345670",
-    date: "2026-01-13",
-    time: "14:00",
-    status: "confirmed",
-    vehicleBrand: "Opel",
-    vehicleModel: "Corsa",
-    licensePlate: "OP-123-QR",
-    repairType: "Échappement",
-    estimatedCost: 420,
-  },
-  {
-    id: "rdv-g12",
-    userId: "user-garage",
-    clientName: "Chloé Trot",
-    phone: "+33823456781",
-    date: "2026-01-14",
-    time: "08:00",
-    status: "pending",
-    vehicleBrand: "Hyundai",
-    vehicleModel: "i20",
-    licensePlate: "ST-456-UV",
-    repairType: "Amortisseurs",
-    estimatedCost: 380,
-  },
-  {
-    id: "rdv-g13",
-    userId: "user-garage",
-    clientName: "Nathan Course",
-    phone: "+33834567892",
-    date: "2026-01-14",
-    time: "11:00",
-    status: "confirmed",
-    vehicleBrand: "Kia",
-    vehicleModel: "Sportage",
-    licensePlate: "WX-789-YZ",
-    repairType: "Révision complète",
-    estimatedCost: 520,
-  },
-  {
-    id: "rdv-g14",
-    userId: "user-garage",
-    clientName: "Jade Marche",
-    phone: "+33845678903",
-    date: "2026-01-15",
-    time: "09:00",
-    status: "pending",
-    vehicleBrand: "Seat",
-    vehicleModel: "Ibiza",
-    licensePlate: "AB-012-CD",
-    repairType: "Vidange",
-    estimatedCost: 95,
-  },
-  {
-    id: "rdv-g15",
-    userId: "user-garage",
-    clientName: "Raphaël Nage",
-    phone: "+33856789014",
-    date: "2026-01-15",
-    time: "14:00",
-    status: "confirmed",
-    vehicleBrand: "Skoda",
-    vehicleModel: "Octavia",
-    licensePlate: "EF-345-GH",
-    repairType: "Pneus hiver",
-    estimatedCost: 480,
-  },
-]
-
-const defaultStockItems: StockItem[] = [
-  // Luigi Pizza menu items
-  {
-    id: "stock-1",
-    userId: "user-luigi",
-    name: "Pizza Margherita",
-    description: "Tomate, mozzarella, basilic",
-    price: 12,
-    category: "Pizzas",
-    isActive: true,
-  },
-  {
-    id: "stock-2",
-    userId: "user-luigi",
-    name: "Pizza 4 Fromages",
-    description: "Mozzarella, gorgonzola, parmesan, chèvre",
-    price: 15,
-    category: "Pizzas",
-    isActive: true,
-  },
-  {
-    id: "stock-3",
-    userId: "user-luigi",
-    name: "Pizza Pepperoni",
-    description: "Tomate, mozzarella, pepperoni",
-    price: 14,
-    category: "Pizzas",
-    isActive: true,
-  },
-  {
-    id: "stock-4",
-    userId: "user-luigi",
-    name: "Tiramisu",
-    description: "Dessert italien traditionnel",
-    price: 8,
-    category: "Desserts",
-    isActive: true,
-  },
-  {
-    id: "stock-5",
-    userId: "user-luigi",
-    name: "Panna Cotta",
-    description: "Crème vanille et coulis fruits rouges",
-    price: 7,
-    category: "Desserts",
-    isActive: false,
-  },
-  // Dentiste services
-  {
-    id: "stock-d1",
-    userId: "user-dupont",
-    name: "Consultation",
-    description: "Examen dentaire complet",
-    price: 50,
-    category: "Consultations",
-    isActive: true,
-  },
-  {
-    id: "stock-d2",
-    userId: "user-dupont",
-    name: "Détartrage",
-    description: "Nettoyage professionnel",
-    price: 80,
-    category: "Soins",
-    isActive: true,
-  },
-  {
-    id: "stock-d3",
-    userId: "user-dupont",
-    name: "Extraction",
-    description: "Extraction dentaire simple",
-    price: 120,
-    category: "Soins",
-    isActive: true,
-  },
-  // Garage services
-  {
-    id: "stock-g1",
-    userId: "user-garage",
-    name: "Vidange",
-    description: "Changement huile moteur",
-    price: 95,
-    category: "Entretien",
-    isActive: true,
-  },
-  {
-    id: "stock-g2",
-    userId: "user-garage",
-    name: "Révision complète",
-    description: "Contrôle 50 points",
-    price: 250,
-    category: "Entretien",
-    isActive: true,
-  },
-  {
-    id: "stock-g3",
-    userId: "user-garage",
-    name: "Changement pneus",
-    description: "4 pneus montés équilibrés",
-    price: 60,
-    category: "Pneumatiques",
-    isActive: true,
-  },
-]
-
-const defaultPromos: Promo[] = [
-  {
-    id: "promo-1",
-    userId: "user-luigi",
-    title: "25% sur les Pizzas",
-    description: "Samedi soir uniquement",
-    code: "PIZZA25",
-    discount: 25,
-    discountType: "percent",
-    startDate: "2026-01-10",
-    endDate: "2026-01-12",
-    isActive: true,
-  },
-  {
-    id: "promo-2",
-    userId: "user-luigi",
-    title: "Dessert offert",
-    description: "Pour toute commande > 30€",
-    code: "DOLCE",
-    discount: 8,
-    discountType: "fixed",
-    startDate: "2026-01-01",
-    isActive: true,
-  },
-]
-
-const defaultCallLogs: CallLog[] = [
-  {
-    id: "call-1",
-    userId: "user-luigi",
-    clientName: "Marie Martin",
-    phone: "+33612345678",
-    type: "incoming",
-    status: "completed",
-    duration: 222,
-    timestamp: "2026-01-09T14:32:00Z",
-    summary: "👤 4 personnes | ⏰ Samedi 19h",
-    metadata: { guests: 4, time: "19:00" },
-  },
-  {
-    id: "call-2",
-    userId: "user-luigi",
-    clientName: "Paul Bernard",
-    phone: "+33623456789",
-    type: "incoming",
-    status: "completed",
-    duration: 156,
-    timestamp: "2026-01-09T15:45:00Z",
-    summary: "👤 2 personnes | ⏰ Samedi 20h",
-    metadata: { guests: 2, time: "20:00" },
-  },
-  {
-    id: "call-3",
-    userId: "user-luigi",
-    clientName: "Inconnu",
-    phone: "+33698765432",
-    type: "incoming",
-    status: "missed",
-    timestamp: "2026-01-09T16:20:00Z",
-  },
-  {
-    id: "call-4",
-    userId: "user-dupont",
-    clientName: "Alice Blanc",
-    phone: "+33712345678",
-    type: "incoming",
-    status: "completed",
-    duration: 180,
-    timestamp: "2026-01-09T09:15:00Z",
-    summary: "🦷 Détartrage | 🚪 Salle 1",
-    metadata: { service: "Détartrage", room: "Salle 1" },
-  },
-  {
-    id: "call-5",
-    userId: "user-garage",
-    clientName: "Jean Auto",
-    phone: "+33812345678",
-    type: "incoming",
-    status: "completed",
-    duration: 245,
-    timestamp: "2026-01-09T08:30:00Z",
-    summary: "🚗 Audi A3 | 🔧 Révision complète",
-    metadata: { vehicle: "Audi A3", repair: "Révision complète" },
-  },
-  {
-    id: "call-6",
-    userId: "user-garage",
-    clientName: "Marie Voiture",
-    phone: "+33823456789",
-    type: "outgoing",
-    status: "completed",
-    duration: 120,
-    timestamp: "2026-01-09T11:00:00Z",
-    summary: "🚗 Peugeot 308 | 📞 Rappel RDV",
-    metadata: { vehicle: "Peugeot 308", reason: "Rappel" },
-  },
-]
-
-const defaultState: AppState = {
-  users: defaultUsers,
-  rdvs: defaultRDVs,
-  stockItems: defaultStockItems,
-  promos: defaultPromos,
-  callLogs: defaultCallLogs,
-  currentUserId: null,
-}
-
-function getState(): AppState {
-  if (typeof window === "undefined") return defaultState
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState))
-    return defaultState
+  if (error) {
+    console.error("Error fetching users:", error)
+    return []
   }
-  return JSON.parse(stored)
+
+  return profiles.map(p => ({
+    id: p.id,
+    email: p.email,
+    name: p.name,
+    password: "",
+    companyName: p.company_name,
+    role: p.settings?.role || "client",
+    sector: p.business_type,
+    plan: p.tier,
+    settings: p.settings,
+    webhookUrl: p.webhook_url,
+    createdAt: p.created_at
+  })) as User[]
 }
 
-function setState(state: AppState): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-}
-
-// Auth functions
-export function login(email: string, password: string): User | null {
-  const state = getState()
-  const user = state.users.find((u) => u.email === email && u.password === password)
-  if (user) {
-    state.currentUserId = user.id
-    setState(state)
+export const createUser = async (user: Partial<User>) => {
+  // Note: This only creates the profile. Auth user must be created via Sign Up or Supabase Dashboard.
+  const dbProfile = {
+    email: user.email,
+    name: user.name,
+    company_name: user.companyName,
+    business_type: user.sector,
+    tier: user.plan,
+    webhook_url: user.webhookUrl,
+    settings: { role: user.role || 'client' }
   }
-  return user || null
+  const { error } = await supabase.from('profiles').insert(dbProfile)
+  if (error) console.error("Error creating user profile:", error)
 }
 
-export function logout(): void {
-  const state = getState()
-  state.currentUserId = null
-  setState(state)
-}
+export const updateUser = async (id: string, updates: Partial<User>) => {
+  // Map User updates to profile columns
+  const profileUpdates: any = {}
+  if (updates.name) profileUpdates.name = updates.name
+  if (updates.companyName) profileUpdates.company_name = updates.companyName
+  if (updates.sector) profileUpdates.business_type = updates.sector
+  if (updates.plan) profileUpdates.tier = updates.plan
+  if (updates.webhookUrl !== undefined) profileUpdates.webhook_url = updates.webhookUrl
 
-export function getCurrentUser(): User | null {
-  const state = getState()
-  if (!state.currentUserId) return null
-  return state.users.find((u) => u.id === state.currentUserId) || null
-}
-
-export function signup(data: Omit<User, "id" | "createdAt" | "role">): User {
-  const state = getState()
-  const newUser: User = {
-    ...data,
-    id: `user-${Date.now()}`,
-    role: "client",
-    plan: "starter",
-    createdAt: new Date().toISOString(),
+  // For specialized settings, merge into existing settings
+  if (updates.role) {
+    // This implies we need to fetch existing settings first or use a jsonb_set logic
+    // For simplicity, we assume we might overwrite or ignored here as role is sensitive
   }
-  state.users.push(newUser)
-  state.currentUserId = newUser.id
-  setState(state)
-  return newUser
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(profileUpdates)
+    .eq('id', id)
+
+  if (error) console.error("Error updating user:", error)
 }
 
-// User management (admin)
-export function getUsers(): User[] {
-  return getState().users.filter((u) => u.role === "client")
+export const deleteUser = async (id: string) => {
+  // Delete profile (cascades to other tables)
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', id)
+
+  if (error) console.error("Error deleting user:", error)
 }
 
-export function getUserById(id: string): User | null {
-  return getState().users.find((u) => u.id === id) || null
-}
+// --- RDVs / Bookings ---
 
-export function updateUser(id: string, data: Partial<User>): User | null {
-  const state = getState()
-  const index = state.users.findIndex((u) => u.id === id)
-  if (index === -1) return null
-  state.users[index] = { ...state.users[index], ...data }
-  setState(state)
-  return state.users[index]
-}
+export const getRDVs = async (userId: string): Promise<RDV[]> => {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('profile_id', userId)
 
-export function deleteUser(id: string): boolean {
-  const state = getState()
-  const index = state.users.findIndex((u) => u.id === id)
-  if (index === -1) return false
-  state.users.splice(index, 1)
-  // Also delete related data
-  state.rdvs = state.rdvs.filter((r) => r.userId !== id)
-  state.stockItems = state.stockItems.filter((s) => s.userId !== id)
-  state.promos = state.promos.filter((p) => p.userId !== id)
-  state.callLogs = state.callLogs.filter((c) => c.userId !== id)
-  setState(state)
-  return true
-}
-
-export function addUser(data: Omit<User, "id" | "createdAt">): User {
-  const state = getState()
-  const newUser: User = {
-    ...data,
-    id: `user-${Date.now()}`,
-    createdAt: new Date().toISOString(),
+  if (error) {
+    console.error("Error fetching bookings:", error)
+    return []
   }
-  state.users.push(newUser)
-  setState(state)
-  return newUser
+
+  // Map DB booking to RDV
+  return data.map((b: any) => ({
+    id: b.id,
+    userId: b.profile_id,
+    clientName: b.client_name,
+    email: b.email,
+    phone: b.phone,
+    date: b.date,
+    time: b.time,
+    status: b.status,
+    notes: b.internal_notes,
+    // Spread metadata for specific fields
+    ...b.metadata
+  }))
 }
 
-// RDV functions
-export function getRDVs(userId?: string): RDV[] {
-  const state = getState()
-  if (userId) return state.rdvs.filter((r) => r.userId === userId)
-  return state.rdvs
+export const addRDV = async (rdv: Partial<RDV>) => {
+  const dbBooking = {
+    profile_id: rdv.userId,
+    client_name: rdv.clientName,
+    email: rdv.email,
+    phone: rdv.phone,
+    date: rdv.date,
+    time: rdv.time,
+    status: rdv.status || 'pending',
+    internal_notes: rdv.notes,
+    metadata: {
+      guests: rdv.guests,
+      tableId: rdv.tableId,
+      patientName: rdv.patientName,
+      serviceType: rdv.serviceType,
+      roomId: rdv.roomId,
+      medicalNotes: rdv.medicalNotes,
+      vehicleBrand: rdv.vehicleBrand,
+      vehicleModel: rdv.vehicleModel,
+      licensePlate: rdv.licensePlate,
+      repairType: rdv.repairType,
+      estimatedCost: rdv.estimatedCost,
+      technicalNotes: rdv.technicalNotes
+    }
+  }
+  const { error } = await supabase.from('bookings').insert(dbBooking)
+  if (error) console.error("Error adding booking:", error)
 }
 
-export function getRDVById(id: string): RDV | null {
-  return getState().rdvs.find((r) => r.id === id) || null
+export const updateRDV = async (id: string, updates: Partial<RDV>) => {
+  // Fetch current metadata to merge? Simple map for now.
+  const dbUpdates: any = {}
+  if (updates.clientName) dbUpdates.client_name = updates.clientName
+  if (updates.email) dbUpdates.email = updates.email
+  if (updates.phone) dbUpdates.phone = updates.phone
+  if (updates.date) dbUpdates.date = updates.date
+  if (updates.time) dbUpdates.time = updates.time
+  if (updates.status) dbUpdates.status = updates.status
+  if (updates.notes) dbUpdates.internal_notes = updates.notes
+
+  // Metadata updates strictly overwrite for now or we need a deep merge
+  // Not critical for prototype
+
+  const { error } = await supabase.from('bookings').update(dbUpdates).eq('id', id)
+  if (error) console.error("Error updating booking:", error)
 }
 
-export function addRDV(data: Omit<RDV, "id">): RDV {
-  const state = getState()
-  const newRDV: RDV = { ...data, id: `rdv-${Date.now()}` }
-  state.rdvs.push(newRDV)
-  setState(state)
-  return newRDV
+export const deleteRDV = async (id: string) => {
+  const { error } = await supabase.from('bookings').delete().eq('id', id)
+  if (error) console.error("Error deleting booking:", error)
 }
 
-export function updateRDV(id: string, data: Partial<RDV>): RDV | null {
-  const state = getState()
-  const index = state.rdvs.findIndex((r) => r.id === id)
-  if (index === -1) return null
-  state.rdvs[index] = { ...state.rdvs[index], ...data }
-  setState(state)
-  return state.rdvs[index]
+// --- Stock Items ---
+
+export const getStockItems = async (userId: string): Promise<StockItem[]> => {
+  const { data, error } = await supabase
+    .from('stock_items')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error("Error fetching stock:", error)
+    return []
+  }
+
+  // Map data
+  return data.map((d: any) => ({
+    id: d.id,
+    userId: d.user_id,
+    name: d.name,
+    description: d.description,
+    price: d.price,
+    category: d.category,
+    isActive: d.is_active,
+    imageUrl: d.image_url
+  }))
 }
 
-export function deleteRDV(id: string): boolean {
-  const state = getState()
-  const index = state.rdvs.findIndex((r) => r.id === id)
-  if (index === -1) return false
-  state.rdvs.splice(index, 1)
-  setState(state)
-  return true
+export const addStockItem = async (item: Partial<StockItem>) => {
+  const { error } = await supabase.from('stock_items').insert({
+    user_id: item.userId,
+    name: item.name,
+    description: item.description,
+    price: item.price,
+    category: item.category,
+    is_active: item.isActive ?? true,
+    image_url: item.imageUrl
+  })
+  if (error) console.error("Error adding stock:", error)
 }
 
-// Stock functions
-export function getStockItems(userId?: string): StockItem[] {
-  const state = getState()
-  if (userId) return state.stockItems.filter((s) => s.userId === userId)
-  return state.stockItems
+export const updateStockItem = async (id: string, updates: Partial<StockItem>) => {
+  const dbUpdates: any = {}
+  if (updates.name) dbUpdates.name = updates.name
+  if (updates.description) dbUpdates.description = updates.description
+  if (updates.price) dbUpdates.price = updates.price
+  if (updates.category) dbUpdates.category = updates.category
+  if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive
+
+  const { error } = await supabase.from('stock_items').update(dbUpdates).eq('id', id)
+  if (error) console.error("Error updating stock:", error)
 }
 
-export function addStockItem(data: Omit<StockItem, "id">): StockItem {
-  const state = getState()
-  const newItem: StockItem = { ...data, id: `stock-${Date.now()}` }
-  state.stockItems.push(newItem)
-  setState(state)
-  return newItem
+export const deleteStockItem = async (id: string) => {
+  const { error } = await supabase.from('stock_items').delete().eq('id', id)
+  if (error) console.error("Error deleting stock:", error)
 }
 
-export function updateStockItem(id: string, data: Partial<StockItem>): StockItem | null {
-  const state = getState()
-  const index = state.stockItems.findIndex((s) => s.id === id)
-  if (index === -1) return null
-  state.stockItems[index] = { ...state.stockItems[index], ...data }
-  setState(state)
-  return state.stockItems[index]
+// --- Promos ---
+
+export const getPromos = async (userId: string): Promise<Promo[]> => {
+  const { data, error } = await supabase
+    .from('promos')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error("Error fetching promos:", error)
+    return []
+  }
+
+  return data.map((d: any) => ({
+    id: d.id,
+    userId: d.user_id,
+    title: d.title,
+    description: d.description,
+    code: d.code,
+    discount: d.discount,
+    discountType: d.discount_type,
+    startDate: d.start_date,
+    endDate: d.end_date,
+    isActive: d.is_active
+  }))
 }
 
-export function deleteStockItem(id: string): boolean {
-  const state = getState()
-  const index = state.stockItems.findIndex((s) => s.id === id)
-  if (index === -1) return false
-  state.stockItems.splice(index, 1)
-  setState(state)
-  return true
+export const addPromo = async (promo: Partial<Promo>) => {
+  const { error } = await supabase.from('promos').insert({
+    user_id: promo.userId,
+    title: promo.title,
+    description: promo.description,
+    code: promo.code,
+    discount: promo.discount,
+    discount_type: promo.discountType,
+    start_date: promo.startDate,
+    end_date: promo.endDate,
+    is_active: promo.isActive ?? true
+  })
+  if (error) console.error("Error adding promo:", error)
 }
 
-// Promo functions
-export function getPromos(userId?: string): Promo[] {
-  const state = getState()
-  if (userId) return state.promos.filter((p) => p.userId === userId)
-  return state.promos
+export const updatePromo = async (id: string, updates: Partial<Promo>) => {
+  const dbUpdates: any = {}
+  if (updates.title) dbUpdates.title = updates.title
+  if (updates.description) dbUpdates.description = updates.description
+  if (updates.code) dbUpdates.code = updates.code
+  if (updates.discount) dbUpdates.discount = updates.discount
+  if (updates.discountType) dbUpdates.discount_type = updates.discountType
+  if (updates.startDate) dbUpdates.start_date = updates.startDate
+  if (updates.endDate) dbUpdates.end_date = updates.endDate
+  if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive
+
+  const { error } = await supabase.from('promos').update(dbUpdates).eq('id', id)
+  if (error) console.error("Error updating promo:", error)
 }
 
-export function addPromo(data: Omit<Promo, "id">): Promo {
-  const state = getState()
-  const newPromo: Promo = { ...data, id: `promo-${Date.now()}` }
-  state.promos.push(newPromo)
-  setState(state)
-  return newPromo
+export const deletePromo = async (id: string) => {
+  const { error } = await supabase.from('promos').delete().eq('id', id)
+  if (error) console.error("Error deleting promo:", error)
 }
 
-export function updatePromo(id: string, data: Partial<Promo>): Promo | null {
-  const state = getState()
-  const index = state.promos.findIndex((p) => p.id === id)
-  if (index === -1) return null
-  state.promos[index] = { ...state.promos[index], ...data }
-  setState(state)
-  return state.promos[index]
+// --- Call Logs ---
+
+export const getCallLogs = async (userId: string): Promise<CallLog[]> => {
+  const { data, error } = await supabase
+    .from('call_logs')
+    .select('*')
+    .eq('profile_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error("Error fetching calls:", error)
+    return []
+  }
+
+  return data.map((c: any) => ({
+    id: c.id,
+    userId: c.profile_id,
+    clientName: c.caller_name || c.metadata?.caller_name || "Inconnu",
+    phone: c.caller_phone || "Masqué",
+    type: c.type,
+    status: c.status,
+    duration: c.duration,
+    timestamp: c.created_at,
+    summary: c.transcript || c.metadata?.summary,
+    metadata: c.metadata
+  }))
 }
 
-export function deletePromo(id: string): boolean {
-  const state = getState()
-  const index = state.promos.findIndex((p) => p.id === id)
-  if (index === -1) return false
-  state.promos.splice(index, 1)
-  setState(state)
-  return true
+export const addCallLog = async (log: Partial<CallLog>) => {
+  // Used mainly by system or webhook really
+  const { error } = await supabase.from('call_logs').insert({
+    profile_id: log.userId,
+    caller_name: log.clientName,
+    caller_phone: log.phone,
+    type: log.type,
+    status: log.status,
+    duration: log.duration,
+    created_at: log.timestamp || new Date().toISOString(),
+    metadata: log.metadata
+  })
+  if (error) console.error("Error adding call log:", error)
 }
 
-// Call log functions
-export function getCallLogs(userId?: string): CallLog[] {
-  const state = getState()
-  if (userId) return state.callLogs.filter((c) => c.userId === userId)
-  return state.callLogs
-}
+// --- Utils ---
 
-export function addCallLog(data: Omit<CallLog, "id">): CallLog {
-  const state = getState()
-  const newCall: CallLog = { ...data, id: `call-${Date.now()}` }
-  state.callLogs.push(newCall)
-  setState(state)
-  return newCall
-}
-
-// Reset to default state
-export function resetData(): void {
-  setState(defaultState)
+export const resetData = () => {
+  // No-op for Supabase store
 }
