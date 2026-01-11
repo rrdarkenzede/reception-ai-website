@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { SentimentRing } from './SentimentRing'
 import { AudioPlayer } from './AudioPlayer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
