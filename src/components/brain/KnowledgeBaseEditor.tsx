@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { Trash2, Edit2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface KnowledgeItem {

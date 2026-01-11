@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingDown, DollarSign } from 'lucide-react'
 import type { BusinessType } from '@/lib/types'
-import { getBusinessConfig } from '@/lib/config/business-config'
 
 interface LostRevenueCalculatorProps {
   missedCalls: number
@@ -20,6 +19,15 @@ const AVG_BOOKING_VALUES: Record<BusinessType, number> = {
   real_estate: 0, // Commission-based
   automotive: 250,
   trades: 150,
+  dentiste: 60,
+  garage: 180,
+  immobilier: 300,
+  juridique: 250,
+  beaute: 75,
+  sport: 40,
+  autoecole: 120,
+  veterinaire: 90,
+  clinique: 150,
 }
 
 const CONVERSION_RATE = 0.15 // 15% of calls convert to bookings

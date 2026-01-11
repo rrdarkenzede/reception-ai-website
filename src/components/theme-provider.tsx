@@ -8,10 +8,6 @@ interface ThemeProviderProps {
   storageKey?: string
 }
 
-interface ThemeProviderState {
-  theme: Theme
-}
-
 const ThemeProviderContext = React.createContext<{
   theme: Theme
   setTheme: (theme: Theme) => void

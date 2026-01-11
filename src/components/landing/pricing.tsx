@@ -38,7 +38,7 @@ export function Pricing() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-          {PLANS.map((plan, index) => {
+          {PLANS.map((plan) => {
             const isPopular = plan.value === "pro"
             return (
               <div

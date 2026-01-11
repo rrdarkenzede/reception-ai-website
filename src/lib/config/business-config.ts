@@ -276,6 +276,205 @@ export const BUSINESS_CONFIGS: Record<BusinessType, BusinessConfig> = {
     },
     neonGlow: 'glow-trades',
   },
+  // French variants
+  dentiste: {
+    vocabulary: {
+      service: 'Consultation',
+      booking: 'Rendez-vous',
+      client: 'Patient',
+      appointment: 'Rendez-vous',
+      resource: 'Cabinet',
+      staff: 'Dentiste',
+      location: 'Cabinet',
+    },
+    icons: {
+      primary: '🦷',
+      secondary: '🏥',
+    },
+    metadataSchema: medicalMetadataSchema,
+    availableModules: ['patient_records', 'appointment_scheduler', 'treatment_planner'],
+    colorScheme: {
+      primary: '#3b82f6', // blue
+      accent: '#60a5fa',
+    },
+    neonGlow: 'glow-medical',
+  },
+  garage: {
+    vocabulary: {
+      service: 'Réparation',
+      booking: 'RDV Atelier',
+      client: 'Client',
+      appointment: 'RDV Atelier',
+      resource: 'Stand',
+      staff: 'Mécanicien',
+      location: 'Garage',
+    },
+    icons: {
+      primary: '🔧',
+      secondary: '🚗',
+    },
+    metadataSchema: automotiveMetadataSchema,
+    availableModules: ['vehicle_tracker', 'parts_inventory', 'service_history'],
+    colorScheme: {
+      primary: '#ef4444', // red
+      accent: '#f87171',
+    },
+    neonGlow: 'glow-automotive',
+  },
+  immobilier: {
+    vocabulary: {
+      service: 'Visite',
+      booking: 'Visite',
+      client: 'Client',
+      appointment: 'Visite',
+      resource: 'Bien',
+      staff: 'Agent',
+      location: 'Propriété',
+    },
+    icons: {
+      primary: '🏠',
+      secondary: '🔑',
+    },
+    metadataSchema: realEstateMetadataSchema,
+    availableModules: ['property_manager', 'viewing_scheduler', 'document_manager'],
+    colorScheme: {
+      primary: '#f97316', // orange
+      accent: '#fb923c',
+    },
+    neonGlow: 'glow-real-estate',
+  },
+  juridique: {
+    vocabulary: {
+      service: 'Consultation',
+      booking: 'Rendez-vous',
+      client: 'Client',
+      appointment: 'Rendez-vous',
+      resource: 'Dossier',
+      staff: 'Avocat',
+      location: 'Cabinet',
+    },
+    icons: {
+      primary: '⚖️',
+      secondary: '📚',
+    },
+    metadataSchema: legalMetadataSchema,
+    availableModules: ['case_manager', 'document_manager', 'appointment_scheduler'],
+    colorScheme: {
+      primary: '#a855f7', // purple
+      accent: '#c084fc',
+    },
+    neonGlow: 'glow-legal',
+  },
+  beaute: {
+    vocabulary: {
+      service: 'Soin',
+      booking: 'Rendez-vous',
+      client: 'Cliente',
+      appointment: 'Rendez-vous',
+      resource: 'Poste',
+      staff: 'Esthéticienne',
+      location: 'Salon',
+    },
+    icons: {
+      primary: '💄',
+      secondary: '✨',
+    },
+    metadataSchema: beautyMetadataSchema,
+    availableModules: ['appointment_scheduler', 'service_catalog', 'client_manager'],
+    colorScheme: {
+      primary: '#ec4899', // pink
+      accent: '#f472b6',
+    },
+    neonGlow: 'glow-beauty',
+  },
+  sport: {
+    vocabulary: {
+      service: 'Séance',
+      booking: 'Réservation',
+      client: 'Membre',
+      appointment: 'Séance',
+      resource: 'Équipement',
+      staff: 'Coach',
+      location: 'Salle',
+    },
+    icons: {
+      primary: '💪',
+      secondary: '🏋️',
+    },
+    metadataSchema: fitnessMetadataSchema,
+    availableModules: ['class_scheduler', 'member_manager', 'equipment_tracker'],
+    colorScheme: {
+      primary: '#22c55e', // green
+      accent: '#4ade80',
+    },
+    neonGlow: 'glow-fitness',
+  },
+  autoecole: {
+    vocabulary: {
+      service: 'Leçon',
+      booking: 'Leçon',
+      client: 'Élève',
+      appointment: 'Leçon',
+      resource: 'Véhicule',
+      staff: 'Moniteur',
+      location: 'Centre',
+    },
+    icons: {
+      primary: '🚗',
+      secondary: '📚',
+    },
+    metadataSchema: automotiveMetadataSchema,
+    availableModules: ['lesson_scheduler', 'student_tracker', 'vehicle_manager'],
+    colorScheme: {
+      primary: '#3b82f6', // blue
+      accent: '#60a5fa',
+    },
+    neonGlow: 'glow-automotive',
+  },
+  veterinaire: {
+    vocabulary: {
+      service: 'Consultation',
+      booking: 'Rendez-vous',
+      client: 'Propriétaire',
+      appointment: 'Rendez-vous',
+      resource: 'Cabinet',
+      staff: 'Vétérinaire',
+      location: 'Clinique',
+    },
+    icons: {
+      primary: '🐕',
+      secondary: '🏥',
+    },
+    metadataSchema: medicalMetadataSchema,
+    availableModules: ['patient_records', 'appointment_scheduler', 'medical_history'],
+    colorScheme: {
+      primary: '#3b82f6', // blue
+      accent: '#60a5fa',
+    },
+    neonGlow: 'glow-medical',
+  },
+  clinique: {
+    vocabulary: {
+      service: 'Consultation',
+      booking: 'Rendez-vous',
+      client: 'Patient',
+      appointment: 'Rendez-vous',
+      resource: 'Salle',
+      staff: 'Médecin',
+      location: 'Clinique',
+    },
+    icons: {
+      primary: '🏥',
+      secondary: '⚕️',
+    },
+    metadataSchema: medicalMetadataSchema,
+    availableModules: ['patient_records', 'appointment_scheduler', 'treatment_planner'],
+    colorScheme: {
+      primary: '#3b82f6', // blue
+      accent: '#60a5fa',
+    },
+    neonGlow: 'glow-medical',
+  },
 }
 
 export function getBusinessConfig(businessType: BusinessType): BusinessConfig {

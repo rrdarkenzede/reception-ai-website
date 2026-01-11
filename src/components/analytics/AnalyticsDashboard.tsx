@@ -4,13 +4,12 @@ import { LostRevenueCalculator } from './LostRevenueCalculator'
 import type { BusinessType } from '@/lib/types'
 
 interface AnalyticsDashboardProps {
-  profileId: string
   businessType: BusinessType
   calls: Array<{ created_at: string; status: string }>
   bookings: Array<{ status: string; metadata?: { estimated_cost?: number; guests?: number } }>
 }
 
-export function AnalyticsDashboard({ profileId, businessType, calls, bookings }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ businessType, calls, bookings }: AnalyticsDashboardProps) {
   const missedCalls = calls.filter((c) => c.status === 'missed').length
 
   return (

@@ -7,12 +7,17 @@ interface ConversionFunnelProps {
   bookings: Array<{ status: string }>
 }
 
+interface FunnelStage {
+  total: number
+  label: string
+  percentage?: number
+}
+
 export function ConversionFunnel({ calls, bookings }: ConversionFunnelProps) {
   const funnelData = useMemo(() => {
     const totalCalls = calls.length
     const completedCalls = calls.filter((c) => c.status === 'completed').length
     const totalBookings = bookings.length
-    const confirmedBookings = bookings.filter((b) => b.status === 'confirmed').length
     const completedBookings = bookings.filter((b) => b.status === 'completed').length
 
     return {
@@ -20,7 +25,7 @@ export function ConversionFunnel({ calls, bookings }: ConversionFunnelProps) {
       qualified: { total: completedCalls, label: 'Appels qualifiés', percentage: (completedCalls / totalCalls) * 100 },
       bookings: { total: totalBookings, label: 'Réservations', percentage: (totalBookings / completedCalls) * 100 },
       completed: { total: completedBookings, label: 'Complétées', percentage: (completedBookings / totalBookings) * 100 },
-    }
+    } as Record<string, FunnelStage>
   }, [calls, bookings])
 
   const stages = [
