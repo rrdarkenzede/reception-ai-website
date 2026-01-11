@@ -123,7 +123,8 @@ export default function LoginPage() {
                 variant="outline"
                 size="sm"
                 className="w-full h-8 text-xs bg-white/5 border-white/10"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
                   setEmail('admin@receptionai.com')
                   setPassword('admin123')
                 }}
@@ -135,7 +136,8 @@ export default function LoginPage() {
                 variant="outline"
                 size="sm"
                 className="w-full h-8 text-xs bg-white/5 border-white/10"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
                   setEmail('entreprise@receptionai.com')
                   setPassword('entreprise123')
                 }}
