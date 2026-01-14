@@ -24,12 +24,24 @@ export interface UserSettings {
   [key: string]: unknown
 }
 
+
+export interface Restaurant {
+  id: string
+  name: string
+  subscription_tier: string
+  settings: Record<string, unknown>
+  created_at: string
+  is_active: boolean
+}
+
 export interface User {
   id: string
   email: string
   password: string
   name: string
   companyName?: string
+  restaurantId?: string
+  isSuperAdmin?: boolean
   role: UserRole
   sector?: Sector
   plan?: Plan

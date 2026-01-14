@@ -29,10 +29,37 @@ export const getCurrentUser = async (): Promise<User | null> => {
   const { data: { session }, error: authError } = await supabase.auth.getSession()
   if (authError || !session?.user) return null
 
+  let targetUserId = session.user.id
+  let isImpersonating = false
+
+  // Ghost Mode Check
+  if (typeof window !== "undefined") {
+    const ghostCtx = localStorage.getItem("ghost_mode_ctx")
+    if (ghostCtx) {
+        try {
+            const { userId } = JSON.parse(ghostCtx)
+            // Verify real user is admin before switching context logic
+            // Note: RLS is the real guard, this is just for frontend state consistency
+            const { data: adminCheck } = await supabase
+                .from('profiles')
+                .select('is_super_admin')
+                .eq('id', session.user.id)
+                .single()
+            
+            if (adminCheck?.is_super_admin && userId) {
+                targetUserId = userId
+                isImpersonating = true
+            }
+        } catch (e) {
+            console.error("Invalid ghost context", e)
+        }
+    }
+  }
+
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', targetUserId)
     .single()
 
   if (error || !profile) return null
@@ -50,6 +77,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
     settings: profile.settings,
     webhookUrl: profile.webhook_url,
     createdAt: profile.created_at,
+    restaurantId: profile.restaurant_id,
+    isSuperAdmin: isImpersonating ? false : profile.is_super_admin // If impersonating, appear as the client
   } as User
 }
 
@@ -252,6 +281,124 @@ export const deleteRDV = async (id: string) => {
   const { error } = await supabase.from('bookings').delete().eq('id', id)
   if (error) {
     // Error deleting booking - check foreign key constraints
+  }
+}
+
+// --- Admin / Restaurants ---
+
+export const getAllRestaurants = async () => {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('*, retell_agent_id, profiles(id, email, role)')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error("Error fetching restaurants:", error)
+    return []
+  }
+  return data
+}
+
+export const updateRestaurantStatus = async (id: string, isActive: boolean) => {
+  const { error } = await supabase
+    .from('restaurants')
+    .update({ is_active: isActive })
+    .eq('id', id)
+  
+  return error
+}
+
+export const updateRestaurantTier = async (id: string, tier: string) => {
+  const { error } = await supabase
+    .from('restaurants')
+    .update({ subscription_tier: tier })
+    .eq('id', id)
+  
+  return error
+}
+
+export const updateRetellAgentId = async (id: string, agentId: string | null) => {
+  const { error } = await supabase
+    .from('restaurants')
+    .update({ retell_agent_id: agentId || null })
+    .eq('id', id)
+  
+  return error
+}
+
+export const deleteRestaurant = async (id: string) => {
+  // Cascade delete: bookings, stock_items, promos, call_logs, profiles linked to this restaurant
+  // Then delete the restaurant itself
+  // Note: Some of these may fail silently if no rows exist
+  await supabase.from('bookings').delete().eq('restaurant_id', id)
+  await supabase.from('stock_items').delete().eq('restaurant_id', id)
+  await supabase.from('promos').delete().eq('restaurant_id', id)
+  await supabase.from('call_logs').delete().eq('restaurant_id', id)
+  
+  // Unlink profiles (don't delete them, just remove restaurant association)
+  await supabase.from('profiles').update({ restaurant_id: null }).eq('restaurant_id', id)
+  
+  // Finally delete the restaurant
+  const { error } = await supabase.from('restaurants').delete().eq('id', id)
+  return error
+}
+
+export const createRestaurantWithOwner = async (email: string, name: string, tier: string) => {
+  // 1. Create the restaurant first
+  const { data: restaurant, error: restError } = await supabase
+    .from('restaurants')
+    .insert({ name, subscription_tier: tier, is_active: true })
+    .select()
+    .single()
+  
+  if (restError || !restaurant) {
+    return { error: restError?.message || 'Failed to create restaurant' }
+  }
+  
+  // 2. Invite the user via Supabase Auth (sends email)
+  const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+    data: { restaurant_id: restaurant.id, name: name }
+  })
+  
+  if (authError) {
+    // Rollback: delete the restaurant we just created
+    await supabase.from('restaurants').delete().eq('id', restaurant.id)
+    return { error: `Auth error: ${authError.message}` }
+  }
+  
+  // 3. Create the profile linked to the restaurant
+  const { error: profileError } = await supabase.from('profiles').insert({
+    id: authData.user.id,
+    email: email,
+    name: name,
+    company_name: name,
+    restaurant_id: restaurant.id,
+    tier: tier,
+    role: 'owner'
+  })
+  
+  if (profileError) {
+    return { error: `Profile error: ${profileError.message}`, restaurant }
+  }
+  
+  return { restaurant, user: authData.user }
+}
+
+export const getGlobalStats = async () => {
+  // Parallel fetch for stats
+  const [restaurants, bookings] = await Promise.all([
+     supabase.from('restaurants').select('id, subscription_tier', { count: 'exact' }),
+     supabase.from('bookings').select('id', { count: 'exact' }).gte('created_at', new Date(Date.now() - 24*60*60*1000).toISOString())
+  ])
+
+  return {
+    totalRestaurants: restaurants.count ?? 0,
+    totalBookings24h: bookings.count ?? 0,
+    // MRR calculation simplified
+    mrr: (restaurants.data || []).reduce((acc, r) => {
+       const price = r.subscription_tier === 'elite' ? 1000 : r.subscription_tier === 'pro' ? 500 : 0
+       return acc + price
+    }, 0)
   }
 }
 

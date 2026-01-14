@@ -5,9 +5,9 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Clock, Users, Utensils, ChefHat } from 'lucide-react'
+import { AlertTriangle, Clock, Users, Utensils, ChefHat, MapPin, ShoppingBag, Truck } from 'lucide-react'
 
-// Mock data for demo
+// Mock data for demo with omnichannel support
 const MOCK_KITCHEN_ORDERS: RDV[] = [
   {
     id: 'kitchen_1',
@@ -28,9 +28,11 @@ const MOCK_KITCHEN_ORDERS: RDV[] = [
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '20:00',
     status: 'confirmed',
-    guests: 6,
-    tableId: 'T-Large',
-    metadata: { occasion: 'Anniversaire', order_type: 'dine_in' }
+    guests: 0,
+    metadata: { 
+      order_type: 'takeaway',
+      order_details: ['1x Kebab Deluxe Truffé', '2x Coca-Cola', '1x Tiramisu della Nonna']
+    }
   },
   {
     id: 'kitchen_3',
@@ -47,9 +49,23 @@ const MOCK_KITCHEN_ORDERS: RDV[] = [
   {
     id: 'kitchen_4',
     userId: 'demo',
-    clientName: 'Pierre Leblanc',
+    clientName: 'Sophie Leroy',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '21:00',
+    status: 'confirmed',
+    guests: 0,
+    metadata: { 
+      order_type: 'delivery',
+      delivery_address: '45 Rue Oberkampf, 75011 Paris',
+      order_details: ['2x Pizza Margherita DOC', '1x Pizza Quattro Formaggi', '2x San Pellegrino']
+    }
+  },
+  {
+    id: 'kitchen_5',
+    userId: 'demo',
+    clientName: 'Pierre Leblanc',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    time: '21:15',
     status: 'confirmed',
     guests: 2,
     tableId: 'T2',
@@ -266,16 +282,40 @@ export default function KitchenPage() {
                 const hasAllergy = rdv.notes?.toLowerCase().includes('allergi') ||
                   rdv.metadata?.special_requests?.toString().toLowerCase().includes('allergi')
                 
+                const orderType = rdv.metadata?.order_type || 'dine_in'
+                const orderDetails = rdv.metadata?.order_details as string[] | undefined
+                const deliveryAddress = rdv.metadata?.delivery_address as string | undefined
+                
+                // Color coding based on order type
+                const getOrderTypeStyle = () => {
+                  switch (orderType) {
+                    case 'takeaway':
+                      return { bg: 'bg-yellow-500', text: 'À EMPORTER', icon: ShoppingBag }
+                    case 'delivery':
+                      return { bg: 'bg-orange-500', text: 'LIVRAISON', icon: Truck }
+                    default:
+                      return { bg: 'bg-blue-500', text: 'SUR PLACE', icon: Utensils }
+                  }
+                }
+                
+                const orderStyle = getOrderTypeStyle()
+                const OrderIcon = orderStyle.icon
+                
                 return (
                   <div 
                     key={rdv.id}
                     className={`p-4 rounded-xl border-2 ${
                       hasAllergy 
                         ? 'bg-red-900/30 border-red-500' 
-                        : 'bg-zinc-800/50 border-zinc-700'
+                        : orderType === 'delivery'
+                          ? 'bg-orange-900/20 border-orange-500/50'
+                          : orderType === 'takeaway'
+                            ? 'bg-yellow-900/20 border-yellow-500/50'
+                            : 'bg-zinc-800/50 border-zinc-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-4">
                         <div className="text-3xl font-mono font-bold text-cyan-400">
                           {rdv.time}
@@ -283,11 +323,21 @@ export default function KitchenPage() {
                         <div>
                           <div className="text-2xl font-bold">{rdv.clientName}</div>
                           <div className="text-lg text-zinc-400">
-                            {rdv.tableId || '—'} • {rdv.guests || 2} pers
+                            {orderType === 'dine_in' 
+                              ? `${rdv.tableId || '—'} • ${rdv.guests || 2} pers`
+                              : orderType === 'takeaway'
+                                ? 'Retrait comptoir'
+                                : 'À livrer'
+                            }
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {/* Order Type Badge */}
+                        <Badge className={`${orderStyle.bg} text-white text-lg px-3 py-1`}>
+                          <OrderIcon className="w-4 h-4 mr-2" />
+                          {orderStyle.text}
+                        </Badge>
                         {hasAllergy && (
                           <Badge className="bg-red-500 text-white text-lg px-3 py-1">
                             <AlertTriangle className="w-4 h-4 mr-1" />
@@ -299,13 +349,31 @@ export default function KitchenPage() {
                             VIP
                           </Badge>
                         )}
-                        {rdv.metadata?.occasion?.toLowerCase().includes('anniversaire') && (
-                          <Badge className="bg-pink-500 text-white text-lg px-3 py-1">
-                            🎂
-                          </Badge>
-                        )}
                       </div>
                     </div>
+                    
+                    {/* Delivery Address */}
+                    {deliveryAddress && (
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-orange-500/10 rounded-lg">
+                        <MapPin className="w-5 h-5 text-orange-400" />
+                        <span className="text-lg text-orange-200">{deliveryAddress}</span>
+                      </div>
+                    )}
+                    
+                    {/* Order Details */}
+                    {orderDetails && orderDetails.length > 0 && (
+                      <div className="mt-3 p-3 bg-zinc-900 rounded-lg border border-zinc-700">
+                        <div className="text-sm text-zinc-400 mb-2">DÉTAILS COMMANDE:</div>
+                        <div className="space-y-1">
+                          {orderDetails.map((item, idx) => (
+                            <div key={idx} className="text-lg text-white flex items-center gap-2">
+                              <span className="text-cyan-400">•</span>
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}

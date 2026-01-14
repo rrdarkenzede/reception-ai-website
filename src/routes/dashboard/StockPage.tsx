@@ -14,19 +14,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Package, Plus, Pencil, Trash2, Search, Euro } from "lucide-react"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Package, Plus, Pencil, Trash2, Search, Image as ImageIcon, Pizza, Coffee, Beer, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
-// Extracted ItemForm component to fix React reconciliation issues
+// Extracted ItemForm component
 interface ItemFormProps {
     formName: string
     setFormName: (value: string) => void
@@ -102,6 +95,14 @@ function ItemForm({
     )
 }
 
+const getCategoryIcon = (category: string) => {
+    const cat = category.toLowerCase()
+    if (cat.includes('pizza') || cat.includes('burger')) return Pizza
+    if (cat.includes('boisson') || cat.includes('vin') || cat.includes('bar')) return Beer
+    if (cat.includes('dessert') || cat.includes('café')) return Coffee
+    return UtensilsCrossed
+}
+
 export default function StockPage() {
     const [items, setItems] = useState<StockItem[]>([])
     const [searchQuery, setSearchQuery] = useState("")
@@ -140,12 +141,11 @@ export default function StockPage() {
             return
         }
 
-        // Check for duplicates (including hidden items)
         const existingItem = items.find(
             item => item.name.toLowerCase().trim() === formName.toLowerCase().trim()
         )
         if (existingItem) {
-            toast.error(`"${formName}" existe déjà${!existingItem.isActive ? ' (masqué)' : ''}. Modifiez-le au lieu de créer un doublon.`)
+            toast.error(`"${formName}" existe déjà.`)
             return
         }
 
@@ -201,10 +201,18 @@ export default function StockPage() {
         }
     }
 
-    const handleToggleActive = async (item: StockItem) => {
-        await updateStockItem(item.id, { isActive: !item.isActive })
-        await loadItems()
-        toast.success(item.isActive ? "Article désactivé" : "Article activé")
+    const handleToggleActive = async (item: StockItem, newValue: boolean) => {
+        // Optimistic UI
+        setItems(prevItems => prevItems.map(i => i.id === item.id ? { ...i, isActive: newValue } : i))
+        
+        try {
+            await updateStockItem(item.id, { isActive: newValue })
+            toast.success(newValue ? "Article activé" : "Article désactivé - Stock épuisé")
+        } catch (error) {
+            console.error("Failed to update stock:", error)
+            toast.error("Erreur de mise à jour")
+            loadItems() // Rollback
+        }
     }
 
     const filteredItems = items.filter(
@@ -213,7 +221,6 @@ export default function StockPage() {
             item.category?.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    // Group by category
     const categories = [...new Set(filteredItems.map((i) => i.category || "Sans catégorie"))]
 
     return (
@@ -225,7 +232,7 @@ export default function StockPage() {
                         <Package className="w-6 h-6" />
                         Menu / Stock
                     </h1>
-                    <p className="text-muted-foreground mt-1">{items.length} articles</p>
+                    <p className="text-muted-foreground mt-1">{items.length} articles - Gérez votre carte ici</p>
                 </div>
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -265,100 +272,105 @@ export default function StockPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                     className="pl-10"
-                    placeholder="Rechercher..."
+                    placeholder="Rechercher un plat, une boisson..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 
             {/* Items by category */}
-            {categories.map((category) => (
-                <div key={category} className="space-y-3">
-                    <h2 className="text-lg font-semibold text-foreground">{category}</h2>
-                    <div className="glass-card rounded-xl border-border/30 overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Article</TableHead>
-                                    <TableHead>Prix</TableHead>
-                                    <TableHead>Statut</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredItems
-                                    .filter((i) => (i.category || "Sans catégorie") === category)
-                                    .map((item) => (
-                                        <TableRow key={item.id} className={!item.isActive ? "opacity-50 grayscale" : ""}>
-                                            <TableCell>
-                                                <div>
-                                                    <div className="font-medium text-foreground">{item.name}</div>
-                                                    {item.description && (
-                                                        <div className="text-sm text-muted-foreground">{item.description}</div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1 font-medium">
-                                                    <Euro className="w-4 h-4 text-muted-foreground" />
-                                                    {(item.price || 0).toFixed(2)}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    className={item.isActive
-                                                        ? "bg-green-500/20 text-green-500 border-green-500/30"
-                                                        : "bg-red-500/20 text-red-500 border-red-500/30"
-                                                    }
-                                                    onClick={() => handleToggleActive(item)}
-                                                    style={{ cursor: "pointer" }}
-                                                >
-                                                    {item.isActive ? "Disponible" : "Indisponible"}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Dialog open={editingItem?.id === item.id} onOpenChange={(open) => !open && setEditingItem(null)}>
-                                                        <DialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                                                <Pencil className="w-4 h-4" />
-                                                            </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent>
-                                                            <DialogHeader>
-                                                                <DialogTitle>Modifier l'article</DialogTitle>
-                                                                <DialogDescription>Modifiez les informations de l'article.</DialogDescription>
-                                                            </DialogHeader>
-                                                            <ItemForm
-                                                                formName={formName}
-                                                                setFormName={setFormName}
-                                                                formDescription={formDescription}
-                                                                setFormDescription={setFormDescription}
-                                                                formPrice={formPrice}
-                                                                setFormPrice={setFormPrice}
-                                                                formCategory={formCategory}
-                                                                setFormCategory={setFormCategory}
-                                                                formIsActive={formIsActive}
-                                                                setFormIsActive={setFormIsActive}
-                                                            />
-                                                            <DialogFooter>
-                                                                <Button variant="outline" onClick={() => setEditingItem(null)}>Annuler</Button>
-                                                                <Button onClick={handleUpdate}>Enregistrer</Button>
-                                                            </DialogFooter>
-                                                        </DialogContent>
-                                                    </Dialog>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(item)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </Table>
+            {categories.map((category) => {
+                const CategoryIcon = getCategoryIcon(category)
+                return (
+                    <div key={category} className="space-y-3">
+                        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                             <CategoryIcon className="w-5 h-5 opacity-70" />
+                            {category}
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredItems
+                                .filter((i) => (i.category || "Sans catégorie") === category)
+                                .map((item) => (
+                                    <Card 
+                                        key={item.id} 
+                                        className={cn(
+                                            "glass-card border-border/30 overflow-hidden transition-all duration-300",
+                                            !item.isActive && "opacity-60 grayscale bg-muted/20"
+                                        )}
+                                    >
+                                        <div className="aspect-video w-full bg-muted/30 flex items-center justify-center relative group">
+                                            {/* Placeholder Image Logic could be improved with real URLs */}
+                                            <ImageIcon className="w-10 h-10 text-muted-foreground/30 group-hover:scale-110 transition-transform" />
+                                            
+                                            {/* Edit Button overlay */}
+                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                 <Dialog open={editingItem?.id === item.id} onOpenChange={(open) => !open && setEditingItem(null)}>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)}>
+                                                            <Pencil className="w-4 h-4" />
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Modifier l'article</DialogTitle>
+                                                        </DialogHeader>
+                                                        <ItemForm
+                                                            formName={formName}
+                                                            setFormName={setFormName}
+                                                            formDescription={formDescription}
+                                                            setFormDescription={setFormDescription}
+                                                            formPrice={formPrice}
+                                                            setFormPrice={setFormPrice}
+                                                            formCategory={formCategory}
+                                                            setFormCategory={setFormCategory}
+                                                            formIsActive={formIsActive}
+                                                            setFormIsActive={setFormIsActive}
+                                                        />
+                                                        <DialogFooter>
+                                                            <Button variant="outline" onClick={() => setEditingItem(null)}>Annuler</Button>
+                                                            <Button onClick={handleUpdate}>Enregistrer</Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </div>
+                                        </div>
+                                        
+                                        <CardContent className="p-4 space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="font-semibold text-lg leading-tight">{item.name}</div>
+                                                <div className="font-mono font-medium text-primary">{(item.price || 0).toFixed(0)}€</div>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5em]">
+                                                {item.description || "Aucune description"}
+                                            </p>
+                                        </CardContent>
+                                        
+                                        <CardFooter className="p-4 pt-0 flex items-center justify-between border-t border-border/10 mt-2">
+                                            <div className="flex items-center gap-2 pt-4">
+                                                <Switch 
+                                                    checked={item.isActive}
+                                                    onCheckedChange={(checked) => handleToggleActive(item, checked)}
+                                                />
+                                                <span className={cn("text-xs font-medium", item.isActive ? "text-green-500" : "text-muted-foreground")}>
+                                                    {item.isActive ? "DISPONIBLE" : "ÉPUISÉ"}
+                                                </span>
+                                            </div>
+                                            
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10 mt-4" 
+                                                onClick={() => handleDelete(item)}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                ))}
+                        </div>
                     </div>
-                </div>
-            ))}
+                )
+            })}
 
             {filteredItems.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
@@ -368,3 +380,4 @@ export default function StockPage() {
         </div>
     )
 }
+

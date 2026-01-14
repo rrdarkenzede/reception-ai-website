@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getCurrentUser, getRDVs } from '@/lib/store'
+import { getCurrentUser, getRDVs, updateRDV } from '@/lib/store'
 import type { RDV, User } from '@/lib/types'
 import { Calendar } from '@/components/ui/calendar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress'
 import { Users, Clock, CheckCircle, AlertCircle, XCircle, Star, ShoppingBag, Truck, Bell, MoreVertical, MapPin, CalendarDays, TrendingUp, Utensils } from 'lucide-react'
 import { useNotifications } from '@/contexts/NotificationContext'
 import { useSmartSuggestions } from '@/hooks/useSmartSuggestions'
+import { supabase } from '@/lib/supabase'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,13 +106,25 @@ export default function BookingsPage() {
   const { addNotification } = useNotifications()
   const { suggestions, processInput, markSuggestionAsUsed } = useSmartSuggestions()
 
+  const handleUpdateStatus = async (rdvId: string, status: RDV['status'], note?: string) => {
+    try {
+        await updateRDV(rdvId, { status, ...(note ? { notes: note } : {}) })
+        if (status === 'confirmed') toast.success("Réservation confirmée")
+        else if (status === 'cancelled') toast.info("Réservation annulée")
+    } catch (error) {
+        toast.error("Erreur lors de la mise à jour")
+    }
+  }
+
   useEffect(() => {
+    let channel: any
+
     async function load() {
       const u = await getCurrentUser()
       setUser(u)
       if (!u) return
+      
       const rdvData = await getRDVs(u.id)
-      // Use mock data if no real data exists
       setRdvs(rdvData.length > 0 ? rdvData : MOCK_RESERVATIONS)
       
       // Notify about new reservations
@@ -125,9 +138,63 @@ export default function BookingsPage() {
           })
         }
       })
+
+      // Realtime Subscription
+      channel = supabase
+        .channel('public:bookings')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'bookings',
+            filter: `profile_id=eq.${u.id}`,
+          },
+          (payload) => {
+            // Realtime update received
+            
+            if (payload.eventType === 'DELETE') {
+              setRdvs((current) => current.filter((r) => r.id !== payload.old.id))
+              toast.info('Réservation supprimée')
+            } else {
+              // Map snake_case to RDV type
+              const b = payload.new as any
+              const newRDV: RDV = {
+                id: b.id,
+                userId: b.profile_id,
+                clientName: b.client_name || "Inconnu",
+                email: b.email,
+                phone: b.phone,
+                date: b.date,
+                time: b.time,
+                status: b.status,
+                notes: b.internal_notes,
+                ...b.metadata
+              }
+
+              if (payload.eventType === 'INSERT') {
+                setRdvs((current) => [...current, newRDV])
+                toast.success(`Nouvelle réservation: ${newRDV.clientName}`)
+                addNotification({
+                   type: 'reservation',
+                   title: '🍽️ Nouvelle réservation (Live)',
+                   message: `${newRDV.clientName} - ${newRDV.guests || 2} pers`,
+                   actionUrl: `/reservations/${newRDV.id}`
+                })
+              } else if (payload.eventType === 'UPDATE') {
+                setRdvs((current) => current.map((r) => (r.id === newRDV.id ? newRDV : r)))
+              }
+            }
+          }
+        )
+        .subscribe()
     }
 
     load()
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [addNotification])
 
   const upcoming = useMemo(() => {
@@ -426,18 +493,21 @@ export default function BookingsPage() {
                     <DropdownMenuContent align="end" className="w-48">
                       {rdv.status === 'pending' && (
                         <>
-                          <DropdownMenuItem onClick={() => toast.success(`✅ ${rdv.clientName} confirmé`)}>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(rdv.id, 'confirmed')}>
                             <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                             Confirmer
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.error(`❌ ${rdv.clientName} refusé`)}>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(rdv.id, 'cancelled')}>
                             <XCircle className="w-4 h-4 mr-2 text-red-500" />
                             Refuser
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                         </>
                       )}
-                      <DropdownMenuItem onClick={() => toast.info(`🪑 Assignez une table à ${rdv.clientName}`)}>
+                      <DropdownMenuItem onClick={() => {
+                          const table = window.prompt("Numéro de table ?")
+                          if (table) updateRDV(rdv.id, { tableId: table } as any).then(() => toast.success(`Table ${table} assignée`)) 
+                      }}>
                         <MapPin className="w-4 h-4 mr-2" />
                         Assigner Table
                       </DropdownMenuItem>
@@ -447,7 +517,7 @@ export default function BookingsPage() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => toast.warning(`⚠️ ${rdv.clientName} marqué No-Show`)}
+                        onClick={() => handleUpdateStatus(rdv.id, 'cancelled', 'No-Show')}
                         className="text-destructive"
                       >
                         <XCircle className="w-4 h-4 mr-2" />

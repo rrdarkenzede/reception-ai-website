@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { getCurrentUser } from "@/lib/store"
 import type { User } from "@/lib/types"
 import { supabase } from "@/lib/supabase"

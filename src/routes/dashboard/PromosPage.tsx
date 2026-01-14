@@ -187,7 +187,6 @@ export default function PromosPage() {
             ? marketing.active_promos 
             : []
         
-        console.log("PromosPage Loaded Promos:", existingPromos)
         setPromos(existingPromos)
         setIsLoading(false)
     }
@@ -223,9 +222,7 @@ export default function PromosPage() {
 
             if (error) throw error
 
-            // Only show toast here if successful
-             // toast is handled by caller in some cases, but good to ensure db confirmation
-             console.log("Promos saved to DB")
+            // DB save confirmed - toast handled by caller
 
         } catch (error) {
             console.error("Error saving promos:", error)
