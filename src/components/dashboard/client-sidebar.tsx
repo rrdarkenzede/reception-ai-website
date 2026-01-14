@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "@/lib/utils"
-import type { Sector, Plan } from "@/lib/types"
+import type { ComponentType } from 'react'
+import type { Sector, Plan } from '@/lib/types'
 import {
   LayoutDashboard,
   Calendar,
@@ -25,15 +26,22 @@ interface ClientSidebarProps {
   plan: Plan
 }
 
-const sectorMenus: Record<Sector, { icon: any; label: string; href: string; minPlan?: Plan }[]> = {
+interface MenuItem {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  href: string
+  minPlan?: Plan
+}
+
+const sectorMenus: Record<Sector, MenuItem[]> = {
   restaurant: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: LayoutDashboard, label: "Tableau de bord", href: "/dashboard" },
     { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
     { icon: Table2, label: "Tables", href: "/dashboard/tables", minPlan: "pro" },
-    { icon: UtensilsCrossed, label: "Menu", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: Tag, label: "Promos", href: "/dashboard/promos", minPlan: "pro" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+    { icon: UtensilsCrossed, label: "Ma Carte", href: "/dashboard/menu", minPlan: "pro" },
+    { icon: Tag, label: "Marketing / Promos", href: "/dashboard/promos", minPlan: "pro" },
+    { icon: Phone, label: "Appels IA", href: "/dashboard/calls" },
+    { icon: Settings, label: "Réglages", href: "/dashboard/settings" },
   ],
   dentiste: [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -73,6 +81,14 @@ const sectorMenus: Record<Sector, { icon: any; label: string; href: string; minP
     { icon: Phone, label: "Appels", href: "/dashboard/calls" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ],
+  beauty: [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
+    { icon: UtensilsCrossed, label: "Prestations", href: "/dashboard/stock", minPlan: "pro" },
+    { icon: Tag, label: "Promos", href: "/dashboard/promos", minPlan: "pro" },
+    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ],
   sport: [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
@@ -97,8 +113,6 @@ const sectorMenus: Record<Sector, { icon: any; label: string; href: string; minP
     { icon: Phone, label: "Appels", href: "/dashboard/calls" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ],
-  // Mappings for older English keys to French menus
-  beauty: [], // Self-referencing not allowed in object init, so we duplicate or assign later. We'll duplicate for simplicity.
   fitness: [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
     { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },

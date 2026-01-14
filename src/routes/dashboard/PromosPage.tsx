@@ -1,188 +1,325 @@
 import { useState, useEffect } from "react"
-import { getCurrentUser, getPromos, addPromo, updatePromo, deletePromo } from "@/lib/store"
-import type { Promo } from "@/lib/types"
+import { getCurrentUser } from "@/lib/store"
+import type { User, AgentPromo as Promo } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Megaphone, Plus, Pencil, Trash2, Percent, Euro, Calendar } from "lucide-react"
+import { Megaphone, Plus, Pencil, Trash2, Target, Zap, ChefHat } from "lucide-react"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
+
+interface MenuItem {
+    id: string
+    name: string
+    category: string
+    price: number
+    available: boolean
+}
+
+
+
+// Extracted PromoForm component to fix React reconciliation issues
+interface PromoFormProps {
+    formNaturalText: string
+    setFormNaturalText: (value: string) => void
+    formSelectedItems: string[]
+    toggleItemSelection: (itemId: string) => void
+    formPushMode: boolean
+    setFormPushMode: (value: boolean) => void
+    menuItems: MenuItem[]
+}
+
+function PromoForm({
+    formNaturalText,
+    setFormNaturalText,
+    formSelectedItems,
+    toggleItemSelection,
+    formPushMode,
+    setFormPushMode,
+    menuItems,
+}: PromoFormProps) {
+    return (
+        <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="promo-natural-text">Décrivez votre offre *</Label>
+                <Textarea
+                    id="promo-natural-text"
+                    value={formNaturalText}
+                    onChange={(e) => setFormNaturalText(e.target.value)}
+                    placeholder="Ex: -50% sur les desserts ce soir"
+                    className="min-h-[80px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                    Utilisez un langage naturel. L'IA comprendra automatiquement votre offre.
+                </p>
+            </div>
+
+            <div className="space-y-2">
+                <Label>Sélectionnez les plats concernés (optionnel)</Label>
+                {menuItems.length === 0 ? (
+                    <div className="p-4 border border-dashed border-zinc-700 rounded-lg text-center">
+                        <ChefHat className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground mb-2">Aucun plat trouvé.</p>
+                        <a 
+                            href="/dashboard/stock" 
+                            className="text-sm text-cyan-400 hover:text-cyan-300 underline"
+                        >
+                            Allez dans "Ma Carte" pour en ajouter →
+                        </a>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap gap-2 p-3 border border-zinc-800 rounded-lg bg-zinc-900/50 max-h-48 overflow-y-auto">
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => toggleItemSelection(item.id)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                                    formSelectedItems.includes(item.id)
+                                        ? 'border-cyan-500 text-white bg-cyan-500/20 shadow-cyan-500/25 shadow-sm'
+                                        : 'border-zinc-700 text-zinc-400 bg-transparent hover:border-zinc-500 hover:text-zinc-300'
+                                }`}
+                            >
+                                {item.name} • {item.price.toFixed(0)}€
+                            </button>
+                        ))}
+                    </div>
+                )}
+                {formSelectedItems.length > 0 && (
+                    <p className="text-xs text-cyan-400">
+                        ✓ {formSelectedItems.length} plat(s) sélectionné(s)
+                    </p>
+                )}
+            </div>
+
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="space-y-1">
+                    <Label className="text-sm font-medium">FORCER LA SUGGESTION IA</Label>
+                    <p className="text-xs text-muted-foreground">
+                        L'IA proposera cette offre à chaque appel
+                    </p>
+                </div>
+                <Switch
+                    checked={formPushMode}
+                    onCheckedChange={setFormPushMode}
+                />
+            </div>
+
+            {formPushMode && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-500">
+                        <Zap className="w-4 h-4" />
+                        <span className="text-sm font-medium">Mode Push Activé</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Cette offre sera prioritairement suggérée par l'IA lors des appels entrants.
+                    </p>
+                </div>
+            )}
+        </div>
+    )
+}
 
 export default function PromosPage() {
+    const [user, setUser] = useState<User | null>(null)
     const [promos, setPromos] = useState<Promo[]>([])
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([])
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [editingPromo, setEditingPromo] = useState<Promo | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
 
     // Form state
-    const [formTitle, setFormTitle] = useState("")
-    const [formDescription, setFormDescription] = useState("")
-    const [formCode, setFormCode] = useState("")
-    const [formDiscount, setFormDiscount] = useState("")
-    const [formDiscountType, setFormDiscountType] = useState<"percent" | "fixed">("percent")
-    const [formStartDate, setFormStartDate] = useState("")
-    const [formEndDate, setFormEndDate] = useState("")
-    const [formIsActive, setFormIsActive] = useState(true)
+    const [formNaturalText, setFormNaturalText] = useState("")
+    const [formSelectedItems, setFormSelectedItems] = useState<string[]>([])
+    const [formPushMode, setFormPushMode] = useState(false)
 
     useEffect(() => {
-        loadPromos()
+        loadData()
     }, [])
 
-    const loadPromos = async () => {
-        const user = await getCurrentUser()
-        if (user) {
-            setPromos(await getPromos(user.id))
+    const loadData = async () => {
+        const u = await getCurrentUser()
+        setUser(u)
+        if (!u) return
+
+        // Load menu items from stock_items table (where StockPage saves them)
+        const { data: stockItems, error: stockError } = await supabase
+            .from('stock_items')
+            .select('*')
+            .eq('profile_id', u.id)
+            .order('created_at', { ascending: false })
+
+        if (stockError) {
+            console.error("PromosPage: Error loading stock items", stockError)
+        }
+
+        const items = (stockItems || []).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category || 'General',
+            price: item.price || 0,
+            available: item.is_active
+        }))
+        setMenuItems(items)
+
+        // Load existing promos from settings.marketing.active_promos
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('settings')
+            .eq('id', u.id)
+            .single()
+
+        const settings = (profile?.settings || {}) as Record<string, any>
+        const marketing = settings.marketing || {}
+        const existingPromos = Array.isArray(marketing.active_promos) 
+            ? marketing.active_promos 
+            : []
+        
+        console.log("PromosPage Loaded Promos:", existingPromos)
+        setPromos(existingPromos)
+        setIsLoading(false)
+    }
+
+    const updatePromos = async (updatedPromos: Promo[]) => {
+        if (!user) return
+
+        // Optimistic UI update
+        setPromos(updatedPromos)
+
+        try {
+            // Fetch current settings to ensure we don't overwrite other fields
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('settings')
+                .eq('id', user.id)
+                .single()
+            
+            const currentSettings = (profile?.settings || {}) as Record<string, any>
+            
+            const newSettings = {
+                ...currentSettings,
+                marketing: {
+                    ...(currentSettings.marketing || {}),
+                    active_promos: updatedPromos
+                }
+            }
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ settings: newSettings })
+                .eq('id', user.id)
+
+            if (error) throw error
+
+            // Only show toast here if successful
+             // toast is handled by caller in some cases, but good to ensure db confirmation
+             console.log("Promos saved to DB")
+
+        } catch (error) {
+            console.error("Error saving promos:", error)
+            toast.error("Erreur de sauvegarde des promotions")
+            // Rollback (optional, but good practice)
+            loadData() 
         }
     }
 
     const resetForm = () => {
-        setFormTitle("")
-        setFormDescription("")
-        setFormCode("")
-        setFormDiscount("")
-        setFormDiscountType("percent")
-        setFormStartDate("")
-        setFormEndDate("")
-        setFormIsActive(true)
+        setFormNaturalText("")
+        setFormSelectedItems([])
+        setFormPushMode(false)
     }
 
     const handleCreate = async () => {
-        if (!formTitle || !formDiscount) {
-            toast.error("Veuillez remplir les champs obligatoires")
+        if (!formNaturalText) {
+            toast.error("Veuillez décrire votre offre")
             return
         }
 
-        const user = await getCurrentUser()
-        if (!user) return
+        const newPromo: Promo = {
+            id: `promo_${Date.now()}`,
+            natural_text: formNaturalText,
+            active: true,
+            target_items: formSelectedItems.length > 0 ? formSelectedItems : undefined,
+            push_mode: formPushMode,
+            created_at: new Date().toISOString()
+        }
 
-        await addPromo({
-            userId: user.id,
-            title: formTitle,
-            description: formDescription,
-            code: formCode,
-            discount: parseFloat(formDiscount),
-            discountType: formDiscountType,
-            startDate: formStartDate,
-            endDate: formEndDate || undefined,
-            isActive: formIsActive,
-        })
+        const updatedPromos = [...promos, newPromo]
+        await updatePromos(updatedPromos)
 
         toast.success("Promotion créée")
         setIsCreateOpen(false)
         resetForm()
-        await loadPromos()
     }
 
     const handleEdit = (promo: Promo) => {
         setEditingPromo(promo)
-        setFormTitle(promo.title)
-        setFormDescription(promo.description || "")
-        setFormCode(promo.code || "")
-        setFormDiscount(String(promo.discount))
-        setFormDiscountType(promo.discountType || "percent")
-        setFormStartDate(promo.startDate || "")
-        setFormEndDate(promo.endDate || "")
-        setFormIsActive(promo.isActive)
+        setFormNaturalText(promo.natural_text)
+        setFormSelectedItems(promo.target_items || [])
+        setFormPushMode(promo.push_mode || false)
     }
 
     const handleUpdate = async () => {
         if (!editingPromo) return
 
-        await updatePromo(editingPromo.id, {
-            title: formTitle,
-            description: formDescription,
-            code: formCode,
-            discount: parseFloat(formDiscount),
-            discountType: formDiscountType,
-            startDate: formStartDate,
-            endDate: formEndDate,
-            isActive: formIsActive,
-        })
+        const updatedPromo: Promo = {
+            ...editingPromo,
+            natural_text: formNaturalText,
+            target_items: formSelectedItems.length > 0 ? formSelectedItems : undefined,
+            push_mode: formPushMode
+        }
+
+        const updatedPromos = promos.map(p => p.id === editingPromo.id ? updatedPromo : p)
+        await updatePromos(updatedPromos)
 
         toast.success("Promotion mise à jour")
         setEditingPromo(null)
         resetForm()
-        await loadPromos()
     }
 
     const handleDelete = async (promo: Promo) => {
-        if (confirm(`Supprimer "${promo.title}" ?`)) {
-            await deletePromo(promo.id)
+        if (confirm(`Supprimer "${promo.natural_text}" ?`)) {
+            const updatedPromos = promos.filter(p => p.id !== promo.id)
+            await updatePromos(updatedPromos)
             toast.success("Promotion supprimée")
-            await loadPromos()
         }
     }
 
     const handleToggleActive = async (promo: Promo) => {
-        await updatePromo(promo.id, { isActive: !promo.isActive })
-        await loadPromos()
-        toast.success(promo.isActive ? "Promotion désactivée" : "Promotion activée")
+        const updatedPromo = { ...promo, active: !promo.active }
+        const updatedPromos = promos.map(p => p.id === promo.id ? updatedPromo : p)
+        await updatePromos(updatedPromos)
+        toast.success(promo.active ? "Promotion désactivée" : "Promotion activée")
     }
 
-    const PromoForm = () => (
-        <div className="space-y-4 py-4">
-            <div className="space-y-2">
-                <Label>Titre *</Label>
-                <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="25% sur les Pizzas" />
+    const toggleItemSelection = (itemId: string) => {
+        setFormSelectedItems(prev =>
+            prev.includes(itemId)
+                ? prev.filter(id => id !== itemId)
+                : [...prev, itemId]
+        )
+    }
+
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-muted-foreground">Chargement...</div>
             </div>
-            <div className="space-y-2">
-                <Label>Description</Label>
-                <Input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Valable ce week-end uniquement" />
-            </div>
-            <div className="space-y-2">
-                <Label>Code promo</Label>
-                <Input value={formCode} onChange={(e) => setFormCode(e.target.value.toUpperCase())} placeholder="PIZZA25" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label>Réduction *</Label>
-                    <Input type="number" value={formDiscount} onChange={(e) => setFormDiscount(e.target.value)} placeholder="25" />
-                </div>
-                <div className="space-y-2">
-                    <Label>Type</Label>
-                    <Select value={formDiscountType} onValueChange={(v) => setFormDiscountType(v as any)}>
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="percent">Pourcentage (%)</SelectItem>
-                            <SelectItem value="fixed">Montant fixe (€)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label>Date début</Label>
-                    <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label>Date fin</Label>
-                    <Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} />
-                </div>
-            </div>
-            <div className="flex items-center justify-between">
-                <Label>Active</Label>
-                <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
-            </div>
-        </div>
-    )
+        )
+    }
 
     return (
         <div className="space-y-6">
@@ -191,9 +328,9 @@ export default function PromosPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <Megaphone className="w-6 h-6" />
-                        Promos & Annonces
+                        Marketing / Promos
                     </h1>
-                    <p className="text-muted-foreground mt-1">{promos.length} promotions</p>
+                    <p className="text-muted-foreground mt-1">{promos.length} promotion(s) active(s)</p>
                 </div>
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -203,11 +340,22 @@ export default function PromosPage() {
                             Nouvelle Promo
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="glass-card border-border/50 max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Créer une promotion</DialogTitle>
+                            <DialogDescription>
+                                Configurez votre nouvelle offre promotionnelle ici.
+                            </DialogDescription>
                         </DialogHeader>
-                        <PromoForm />
+                        <PromoForm
+                            formNaturalText={formNaturalText}
+                            setFormNaturalText={setFormNaturalText}
+                            formSelectedItems={formSelectedItems}
+                            toggleItemSelection={toggleItemSelection}
+                            formPushMode={formPushMode}
+                            setFormPushMode={setFormPushMode}
+                            menuItems={menuItems}
+                        />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
                             <Button onClick={handleCreate}>Créer</Button>
@@ -219,54 +367,59 @@ export default function PromosPage() {
             {/* Promo Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {promos.map((promo) => (
-                    <Card key={promo.id} className={`glass-card border-border/30 ${!promo.isActive ? "opacity-50" : ""}`}>
+                    <Card key={promo.id} className={`glass-card border-border/30 transition-all ${!promo.active ? "opacity-50" : ""
+                        } ${promo.push_mode ? "ring-2 ring-red-500/50 shadow-red-500/20" : ""}`}>
                         <CardContent className="p-6">
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    {promo.discountType === "percent" ? (
-                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                            <Percent className="w-5 h-5 text-primary" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                                            <Euro className="w-5 h-5 text-green-500" />
-                                        </div>
-                                    )}
-                                    <div>
-                                        <div className="text-2xl font-bold text-primary">
-                                            {promo.discount}{promo.discountType === "percent" ? "%" : "€"}
-                                        </div>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${promo.push_mode
+                                        ? 'bg-red-500/20'
+                                        : 'bg-primary/10'
+                                        }`}>
+                                        {promo.push_mode ? (
+                                            <Zap className="w-5 h-5 text-red-500" />
+                                        ) : (
+                                            <Target className="w-5 h-5 text-primary" />
+                                        )}
                                     </div>
+                                    <Badge
+                                        className={promo.active
+                                            ? "bg-green-500/20 text-green-500 border-green-500/30 cursor-pointer"
+                                            : "bg-muted text-muted-foreground cursor-pointer"
+                                        }
+                                        onClick={() => handleToggleActive(promo)}
+                                    >
+                                        {promo.active ? "Active" : "Inactive"}
+                                    </Badge>
                                 </div>
-                                <Badge
-                                    className={promo.isActive
-                                        ? "bg-green-500/20 text-green-500 border-green-500/30"
-                                        : "bg-muted text-muted-foreground"
-                                    }
-                                    onClick={() => handleToggleActive(promo)}
-                                    style={{ cursor: "pointer" }}
-                                >
-                                    {promo.isActive ? "Active" : "Inactive"}
-                                </Badge>
                             </div>
 
-                            <h3 className="font-semibold text-foreground mb-1">{promo.title}</h3>
-                            {promo.description && (
-                                <p className="text-sm text-muted-foreground mb-3">{promo.description}</p>
-                            )}
+                            <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
+                                {promo.natural_text}
+                            </h3>
 
-                            {promo.code && (
-                                <div className="bg-secondary/50 rounded-lg px-3 py-2 mb-3 font-mono text-sm text-center">
-                                    {promo.code}
+                            {promo.target_items && promo.target_items.length > 0 && (
+                                <div className="mb-3">
+                                    <div className="text-xs text-muted-foreground mb-1">Plats concernés:</div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {promo.target_items.map(itemId => {
+                                            const item = menuItems.find(m => m.id === itemId)
+                                            return item ? (
+                                                <Badge key={itemId} variant="secondary" className="text-xs">
+                                                    {item.name}
+                                                </Badge>
+                                            ) : null
+                                        })}
+                                    </div>
                                 </div>
                             )}
 
-                            {(promo.startDate || promo.endDate) && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
-                                    <Calendar className="w-3 h-3" />
-                                    {promo.startDate && new Date(promo.startDate).toLocaleDateString("fr-FR")}
-                                    {promo.startDate && promo.endDate && " → "}
-                                    {promo.endDate && new Date(promo.endDate).toLocaleDateString("fr-FR")}
+                            {promo.push_mode && (
+                                <div className="p-2 bg-red-500/10 border border-red-500/30 rounded-lg mb-3">
+                                    <div className="flex items-center gap-2 text-red-500 text-xs">
+                                        <Zap className="w-3 h-3" />
+                                        <span className="font-medium">Mode Push</span>
+                                    </div>
                                 </div>
                             )}
 
@@ -278,11 +431,22 @@ export default function PromosPage() {
                                             Modifier
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent>
+                                    <DialogContent className="glass-card border-border/50 max-w-2xl">
                                         <DialogHeader>
                                             <DialogTitle>Modifier la promotion</DialogTitle>
+                                            <DialogDescription>
+                                                Modifiez les détails de votre promotion existante.
+                                            </DialogDescription>
                                         </DialogHeader>
-                                        <PromoForm />
+                                        <PromoForm
+                                            formNaturalText={formNaturalText}
+                                            setFormNaturalText={setFormNaturalText}
+                                            formSelectedItems={formSelectedItems}
+                                            toggleItemSelection={toggleItemSelection}
+                                            formPushMode={formPushMode}
+                                            setFormPushMode={setFormPushMode}
+                                            menuItems={menuItems}
+                                        />
                                         <DialogFooter>
                                             <Button variant="outline" onClick={() => setEditingPromo(null)}>Annuler</Button>
                                             <Button onClick={handleUpdate}>Enregistrer</Button>
@@ -299,9 +463,44 @@ export default function PromosPage() {
             </div>
 
             {promos.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                    Aucune promotion. Créez votre première offre !
-                </div>
+                <Card className="glass-card border-border/30">
+                    <CardContent className="text-center py-12">
+                        <ChefHat className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-foreground mb-2">Aucune promotion</h3>
+                        <p className="text-muted-foreground mb-4">
+                            Créez votre première offre pour attirer plus de clients !
+                        </p>
+                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    Créer votre première promo
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="glass-card border-border/50 max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>Créer une promotion</DialogTitle>
+                                    <DialogDescription>
+                                        Lancez votre première offre pour attirer des clients.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <PromoForm
+                                    formNaturalText={formNaturalText}
+                                    setFormNaturalText={setFormNaturalText}
+                                    formSelectedItems={formSelectedItems}
+                                    toggleItemSelection={toggleItemSelection}
+                                    formPushMode={formPushMode}
+                                    setFormPushMode={setFormPushMode}
+                                    menuItems={menuItems}
+                                />
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
+                                    <Button onClick={handleCreate}>Créer</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </CardContent>
+                </Card>
             )}
         </div>
     )

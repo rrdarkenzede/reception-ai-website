@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 // Landing & Auth
 import LandingPage from '@/routes/LandingPage'
@@ -21,6 +22,7 @@ import CallsPage from '@/routes/dashboard/CallsPage'
 import StockPage from '@/routes/dashboard/StockPage'
 import PromosPage from '@/routes/dashboard/PromosPage'
 import SettingsPage from '@/routes/dashboard/SettingsPage'
+import KitchenPage from '@/routes/dashboard/KitchenPage'
 
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
@@ -31,7 +33,7 @@ import AdminClientsPage from '@/routes/admin/AdminClientsPage'
 
 function App() {
   return (
-    <>
+    <NotificationProvider>
       <Routes>
         {/* Public pages */}
         <Route path="/" element={<LandingPage />} />
@@ -58,8 +60,11 @@ function App() {
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="calls" element={<CallsPage />} />
           <Route path="stock" element={<StockPage />} />
+          <Route path="menu" element={<StockPage />} />
           <Route path="promos" element={<PromosPage />} />
+          <Route path="marketing" element={<PromosPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="kitchen" element={<KitchenPage />} />
         </Route>
 
         {/* Admin panel */}
@@ -72,7 +77,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="bottom-right" />
-    </>
+    </NotificationProvider>
   )
 }
 

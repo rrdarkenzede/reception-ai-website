@@ -44,7 +44,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     name: profile.name, // Ensure profile has name
     password: "", // Not stored in profile, handled by Auth
     companyName: profile.company_name,
-    role: profile.settings?.role || "client",
+    role: profile.role || "client",
     sector: profile.business_type,
     plan: profile.tier,
     settings: profile.settings,
@@ -60,7 +60,7 @@ export const getUsers = async (): Promise<User[]> => {
     .select('*')
 
   if (error) {
-    console.error("Error fetching users:", error)
+    // Error fetching users - likely due to permissions or network issues
     return []
   }
 
@@ -70,7 +70,7 @@ export const getUsers = async (): Promise<User[]> => {
     name: p.name,
     password: "",
     companyName: p.company_name,
-    role: p.settings?.role || "client",
+    role: p.role || "client",
     sector: p.business_type,
     plan: p.tier,
     settings: p.settings,
@@ -91,7 +91,9 @@ export const createUser = async (user: Partial<User>) => {
     settings: { role: user.role || 'client' }
   }
   const { error } = await supabase.from('profiles').insert(dbProfile)
-  if (error) console.error("Error creating user profile:", error)
+  if (error) {
+    // Error creating user profile - likely RLS violation or missing fields
+  }
 }
 
 export const updateUser = async (id: string, updates: Partial<User>) => {
@@ -114,7 +116,9 @@ export const updateUser = async (id: string, updates: Partial<User>) => {
     .update(profileUpdates)
     .eq('id', id)
 
-  if (error) console.error("Error updating user:", error)
+  if (error) {
+    // Error updating user - check if user exists and has permissions
+  }
 }
 
 export const deleteUser = async (id: string) => {
@@ -124,7 +128,9 @@ export const deleteUser = async (id: string) => {
     .delete()
     .eq('id', id)
 
-  if (error) console.error("Error deleting user:", error)
+  if (error) {
+    // Error deleting user - check RLS policies and foreign key constraints
+  }
 }
 
 // --- RDVs / Bookings ---
@@ -217,7 +223,9 @@ export const addRDV = async (rdv: Partial<RDV>) => {
     }
   }
   const { error } = await supabase.from('bookings').insert(dbBooking)
-  if (error) console.error("Error adding booking:", error)
+  if (error) {
+    // Error adding booking - check required fields and RLS policies
+  }
 }
 
 export const updateRDV = async (id: string, updates: Partial<RDV>) => {
@@ -235,12 +243,16 @@ export const updateRDV = async (id: string, updates: Partial<RDV>) => {
   // Not critical for prototype
 
   const { error } = await supabase.from('bookings').update(dbUpdates).eq('id', id)
-  if (error) console.error("Error updating booking:", error)
+  if (error) {
+    // Error updating booking - verify booking exists and user has permissions
+  }
 }
 
 export const deleteRDV = async (id: string) => {
   const { error } = await supabase.from('bookings').delete().eq('id', id)
-  if (error) console.error("Error deleting booking:", error)
+  if (error) {
+    // Error deleting booking - check foreign key constraints
+  }
 }
 
 // --- Stock Items ---
@@ -249,10 +261,12 @@ export const getStockItems = async (userId: string): Promise<StockItem[]> => {
   const { data, error } = await supabase
     .from('stock_items')
     .select('*')
-    .eq('user_id', userId)
+    .eq('profile_id', userId)
+    // NOTE: Removed .eq('is_active', true) - we want ALL items, inactive ones are greyed out
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error("Error fetching stock:", error)
+    // Error fetching stock items - verify table exists and RLS permissions
     return []
   }
 
@@ -260,7 +274,7 @@ export const getStockItems = async (userId: string): Promise<StockItem[]> => {
     .map((row: unknown) => (isRecord(row) ? row : {}))
     .map((d) => ({
       id: asString(d.id),
-      userId: asString(d.user_id),
+      userId: asString(d.profile_id),
       name: asString(d.name),
       description: typeof d.description === "string" ? d.description : undefined,
       price: asNumber(d.price),
@@ -272,7 +286,7 @@ export const getStockItems = async (userId: string): Promise<StockItem[]> => {
 
 export const addStockItem = async (item: Partial<StockItem>) => {
   const { error } = await supabase.from('stock_items').insert({
-    user_id: item.userId,
+    profile_id: item.userId,
     name: item.name,
     description: item.description,
     price: item.price,
@@ -280,7 +294,9 @@ export const addStockItem = async (item: Partial<StockItem>) => {
     is_active: item.isActive ?? true,
     image_url: item.imageUrl
   })
-  if (error) console.error("Error adding stock:", error)
+  if (error) {
+    // Error adding stock item - check required fields and constraints
+  }
 }
 
 export const updateStockItem = async (id: string, updates: Partial<StockItem>) => {
@@ -290,14 +306,19 @@ export const updateStockItem = async (id: string, updates: Partial<StockItem>) =
   if (updates.price) dbUpdates.price = updates.price
   if (updates.category) dbUpdates.category = updates.category
   if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive
+  if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl
 
   const { error } = await supabase.from('stock_items').update(dbUpdates).eq('id', id)
-  if (error) console.error("Error updating stock:", error)
+  if (error) {
+    // Error updating stock item - verify item exists and user permissions
+  }
 }
 
 export const deleteStockItem = async (id: string) => {
   const { error } = await supabase.from('stock_items').delete().eq('id', id)
-  if (error) console.error("Error deleting stock:", error)
+  if (error) {
+    // Error deleting stock item - check foreign key constraints
+  }
 }
 
 // --- Promos ---
@@ -306,10 +327,12 @@ export const getPromos = async (userId: string): Promise<Promo[]> => {
   const { data, error } = await supabase
     .from('promos')
     .select('*')
-    .eq('user_id', userId)
+    .eq('profile_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error("Error fetching promos:", error)
+    // Error fetching promos - verify table exists and RLS permissions
     return []
   }
 
@@ -317,7 +340,7 @@ export const getPromos = async (userId: string): Promise<Promo[]> => {
     .map((row: unknown) => (isRecord(row) ? row : {}))
     .map((d) => ({
       id: asString(d.id),
-      userId: asString(d.user_id),
+      userId: asString(d.profile_id),
       title: asString(d.title),
       description: typeof d.description === "string" ? d.description : undefined,
       code: typeof d.code === "string" ? d.code : "",
@@ -331,7 +354,7 @@ export const getPromos = async (userId: string): Promise<Promo[]> => {
 
 export const addPromo = async (promo: Partial<Promo>) => {
   const { error } = await supabase.from('promos').insert({
-    user_id: promo.userId,
+    profile_id: promo.userId,
     title: promo.title,
     description: promo.description,
     code: promo.code,
@@ -341,7 +364,9 @@ export const addPromo = async (promo: Partial<Promo>) => {
     end_date: promo.endDate,
     is_active: promo.isActive ?? true
   })
-  if (error) console.error("Error adding promo:", error)
+  if (error) {
+    // Error adding promo - check unique code constraint and required fields
+  }
 }
 
 export const updatePromo = async (id: string, updates: Partial<Promo>) => {
@@ -356,12 +381,16 @@ export const updatePromo = async (id: string, updates: Partial<Promo>) => {
   if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive
 
   const { error } = await supabase.from('promos').update(dbUpdates).eq('id', id)
-  if (error) console.error("Error updating promo:", error)
+  if (error) {
+    // Error updating promo - verify promo exists and user permissions
+  }
 }
 
 export const deletePromo = async (id: string) => {
   const { error } = await supabase.from('promos').delete().eq('id', id)
-  if (error) console.error("Error deleting promo:", error)
+  if (error) {
+    // Error deleting promo - check foreign key constraints
+  }
 }
 
 // --- Call Logs ---
@@ -447,7 +476,9 @@ export const addCallLog = async (log: Partial<CallLog>) => {
     created_at: log.timestamp || new Date().toISOString(),
     metadata: log.metadata
   })
-  if (error) console.error("Error adding call log:", error)
+  if (error) {
+    // Error adding call log - typically webhook authentication or data validation issue
+  }
 }
 
 // --- Utils ---

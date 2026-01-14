@@ -38,20 +38,15 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
-    console.log('Tentative de connexion avec:', email, '***')
-
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
 
       if (error) {
-        console.error('Erreur de connexion Supabase:', error)
         throw error
       }
 
-      console.log('Connexion réussie:', data)
       navigate("/dashboard", { replace: true })
     } catch (err) {
-      console.error('Erreur inattendue:', err)
       toast.error("Email ou mot de passe incorrect")
       setShake(true)
       window.setTimeout(() => setShake(false), 400)
@@ -119,7 +114,7 @@ export default function LoginPage() {
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
               {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Initialize System
+              Se Connecter
             </Button>
           </form>
 

@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -24,6 +25,82 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Package, Plus, Pencil, Trash2, Search, Euro } from "lucide-react"
 import { toast } from "sonner"
+
+// Extracted ItemForm component to fix React reconciliation issues
+interface ItemFormProps {
+    formName: string
+    setFormName: (value: string) => void
+    formDescription: string
+    setFormDescription: (value: string) => void
+    formPrice: string
+    setFormPrice: (value: string) => void
+    formCategory: string
+    setFormCategory: (value: string) => void
+    formIsActive: boolean
+    setFormIsActive: (value: boolean) => void
+}
+
+function ItemForm({
+    formName,
+    setFormName,
+    formDescription,
+    setFormDescription,
+    formPrice,
+    setFormPrice,
+    formCategory,
+    setFormCategory,
+    formIsActive,
+    setFormIsActive,
+}: ItemFormProps) {
+    return (
+        <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="item-name">Nom *</Label>
+                <Input
+                    id="item-name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Pizza Margherita"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="item-description">Description</Label>
+                <Input
+                    id="item-description"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Tomate, mozzarella, basilic"
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="item-price">Prix (€) *</Label>
+                    <Input
+                        id="item-price"
+                        type="number"
+                        step="0.01"
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                        placeholder="12.00"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="item-category">Catégorie</Label>
+                    <Input
+                        id="item-category"
+                        value={formCategory}
+                        onChange={(e) => setFormCategory(e.target.value)}
+                        placeholder="Pizzas, Desserts..."
+                    />
+                </div>
+            </div>
+            <div className="flex items-center justify-between">
+                <Label htmlFor="item-active">Disponible</Label>
+                <Switch id="item-active" checked={formIsActive} onCheckedChange={setFormIsActive} />
+            </div>
+        </div>
+    )
+}
 
 export default function StockPage() {
     const [items, setItems] = useState<StockItem[]>([])
@@ -60,6 +137,15 @@ export default function StockPage() {
     const handleCreate = async () => {
         if (!formName || !formPrice) {
             toast.error("Veuillez remplir les champs obligatoires")
+            return
+        }
+
+        // Check for duplicates (including hidden items)
+        const existingItem = items.find(
+            item => item.name.toLowerCase().trim() === formName.toLowerCase().trim()
+        )
+        if (existingItem) {
+            toast.error(`"${formName}" existe déjà${!existingItem.isActive ? ' (masqué)' : ''}. Modifiez-le au lieu de créer un doublon.`)
             return
         }
 
@@ -130,33 +216,6 @@ export default function StockPage() {
     // Group by category
     const categories = [...new Set(filteredItems.map((i) => i.category || "Sans catégorie"))]
 
-    const ItemForm = () => (
-        <div className="space-y-4 py-4">
-            <div className="space-y-2">
-                <Label>Nom *</Label>
-                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Pizza Margherita" />
-            </div>
-            <div className="space-y-2">
-                <Label>Description</Label>
-                <Input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Tomate, mozzarella, basilic" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label>Prix (€) *</Label>
-                    <Input type="number" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="12.00" />
-                </div>
-                <div className="space-y-2">
-                    <Label>Catégorie</Label>
-                    <Input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Pizzas, Desserts..." />
-                </div>
-            </div>
-            <div className="flex items-center justify-between">
-                <Label>Disponible</Label>
-                <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
-            </div>
-        </div>
-    )
-
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -179,8 +238,20 @@ export default function StockPage() {
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Ajouter un article</DialogTitle>
+                            <DialogDescription>Remplissez les informations du nouvel article.</DialogDescription>
                         </DialogHeader>
-                        <ItemForm />
+                        <ItemForm
+                            formName={formName}
+                            setFormName={setFormName}
+                            formDescription={formDescription}
+                            setFormDescription={setFormDescription}
+                            formPrice={formPrice}
+                            setFormPrice={setFormPrice}
+                            formCategory={formCategory}
+                            setFormCategory={setFormCategory}
+                            formIsActive={formIsActive}
+                            setFormIsActive={setFormIsActive}
+                        />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
                             <Button onClick={handleCreate}>Ajouter</Button>
@@ -218,7 +289,7 @@ export default function StockPage() {
                                 {filteredItems
                                     .filter((i) => (i.category || "Sans catégorie") === category)
                                     .map((item) => (
-                                        <TableRow key={item.id} className={!item.isActive ? "opacity-50" : ""}>
+                                        <TableRow key={item.id} className={!item.isActive ? "opacity-50 grayscale" : ""}>
                                             <TableCell>
                                                 <div>
                                                     <div className="font-medium text-foreground">{item.name}</div>
@@ -256,8 +327,20 @@ export default function StockPage() {
                                                         <DialogContent>
                                                             <DialogHeader>
                                                                 <DialogTitle>Modifier l'article</DialogTitle>
+                                                                <DialogDescription>Modifiez les informations de l'article.</DialogDescription>
                                                             </DialogHeader>
-                                                            <ItemForm />
+                                                            <ItemForm
+                                                                formName={formName}
+                                                                setFormName={setFormName}
+                                                                formDescription={formDescription}
+                                                                setFormDescription={setFormDescription}
+                                                                formPrice={formPrice}
+                                                                setFormPrice={setFormPrice}
+                                                                formCategory={formCategory}
+                                                                setFormCategory={setFormCategory}
+                                                                formIsActive={formIsActive}
+                                                                setFormIsActive={setFormIsActive}
+                                                            />
                                                             <DialogFooter>
                                                                 <Button variant="outline" onClick={() => setEditingItem(null)}>Annuler</Button>
                                                                 <Button onClick={handleUpdate}>Enregistrer</Button>

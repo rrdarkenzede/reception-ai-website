@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Pencil, Trash2, Users, Search } from "lucide-react"
 import { getUsers, updateUser, deleteUser, createUser } from "@/lib/store"
 import { SECTORS, PLANS } from "@/lib/types"
-import type { User } from "@/lib/types"
+import type { User, Sector, Plan } from "@/lib/types"
 import { toast } from "sonner"
 
 export default function AdminClientsPage() {
@@ -38,8 +38,8 @@ export default function AdminClientsPage() {
     const [formEmail, setFormEmail] = useState("")
     const [formPassword, setFormPassword] = useState("")
     const [formCompany, setFormCompany] = useState("")
-    const [formSector, setFormSector] = useState("")
-    const [formPlan, setFormPlan] = useState<"starter" | "pro" | "elite">("starter")
+    const [formSector, setFormSector] = useState<Sector | "">("")
+    const [formPlan, setFormPlan] = useState<Plan>("starter")
     const [formWebhookUrl, setFormWebhookUrl] = useState("")
 
     useEffect(() => {
@@ -72,7 +72,7 @@ export default function AdminClientsPage() {
             name: formName,
             companyName: formCompany,
             role: "client",
-            sector: formSector as any,
+            sector: formSector as Sector,
             plan: formPlan,
             webhookUrl: formWebhookUrl,
             createdAt: new Date().toISOString(),
@@ -91,7 +91,7 @@ export default function AdminClientsPage() {
         setFormPassword(user.password || "")
         setFormCompany(user.companyName || "")
         setFormSector(user.sector || "")
-        setFormPlan((user.plan as any) || "starter")
+        setFormPlan(user.plan || "starter")
         setFormWebhookUrl(user.webhookUrl || "")
     }
 
@@ -103,7 +103,7 @@ export default function AdminClientsPage() {
             email: formEmail,
             password: formPassword || undefined,
             companyName: formCompany,
-            sector: formSector as any,
+            sector: formSector as Sector,
             plan: formPlan,
             webhookUrl: formWebhookUrl,
         })
@@ -193,7 +193,7 @@ export default function AdminClientsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>Secteur *</Label>
-                                    <Select value={formSector} onValueChange={setFormSector}>
+                                    <Select value={formSector} onValueChange={(v) => setFormSector(v as Sector)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Sélectionner" />
                                         </SelectTrigger>
@@ -208,7 +208,7 @@ export default function AdminClientsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Plan</Label>
-                                    <Select value={formPlan} onValueChange={(v) => setFormPlan(v as any)}>
+                                    <Select value={formPlan} onValueChange={(v) => setFormPlan(v as Plan)}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -317,7 +317,7 @@ export default function AdminClientsPage() {
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label>Secteur</Label>
-                                                                <Select value={formSector} onValueChange={setFormSector}>
+                                                                <Select value={formSector} onValueChange={(v) => setFormSector(v as Sector)}>
                                                                     <SelectTrigger>
                                                                         <SelectValue />
                                                                     </SelectTrigger>
@@ -332,7 +332,7 @@ export default function AdminClientsPage() {
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label>Plan</Label>
-                                                                <Select value={formPlan} onValueChange={(v) => setFormPlan(v as any)}>
+                                                                <Select value={formPlan} onValueChange={(v) => setFormPlan(v as Plan)}>
                                                                     <SelectTrigger>
                                                                         <SelectValue />
                                                                     </SelectTrigger>

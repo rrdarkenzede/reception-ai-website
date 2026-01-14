@@ -11,10 +11,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = (supabaseUrl && supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null
+
+const headerAsString = (v: string | string[] | undefined): string | undefined =>
+  Array.isArray(v) ? v[0] : v
 
 interface VapiCallEvent {
   type: 'call-start' | 'call-end' | 'function-call' | 'status-update'
@@ -43,9 +48,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  if (!supabase) {
+    return res.status(500).json({
+      error: 'Server misconfigured: missing SUPABASE_URL (or VITE_SUPABASE_URL) and/or SUPABASE_SERVICE_ROLE_KEY'
+    })
+  }
+
   // Verify webhook secret (optional but recommended)
-  const webhookSecret = req.headers['x-vapi-secret']
-  if (webhookSecret !== process.env.VITE_VAPI_WEBHOOK_SECRET) {
+  const webhookSecret = headerAsString(req.headers['x-vapi-secret'])
+  const expectedSecret = process.env.VAPI_WEBHOOK_SECRET || process.env.VITE_VAPI_WEBHOOK_SECRET
+  if (expectedSecret && webhookSecret !== expectedSecret) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 

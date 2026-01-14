@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 export const DEV_USERS = {
   admin: {
     email: 'admin@receptionai.com',
-    password: 'admin123',
+    password: import.meta.env.VITE_DEV_ADMIN_PASSWORD || 'admin123',
     name: 'Admin Demo',
     role: 'admin' as const,
     plan: 'elite' as const,
@@ -12,7 +12,7 @@ export const DEV_USERS = {
   },
   enterprise: {
     email: 'entreprise@receptionai.com',
-    password: 'entreprise123',
+    password: import.meta.env.VITE_DEV_ENTERPRISE_PASSWORD || 'entreprise123',
     name: 'Restaurant Le Gourmet',
     role: 'client' as const,
     plan: 'pro' as const,
@@ -21,7 +21,7 @@ export const DEV_USERS = {
   // Additional test users
   beauty: {
     email: 'salon@receptionai.com',
-    password: 'beaute123',
+    password: import.meta.env.VITE_DEV_BEAUTY_PASSWORD || 'beaute123',
     name: 'Institut Beauté',
     role: 'client' as const,
     plan: 'pro' as const,
@@ -29,7 +29,7 @@ export const DEV_USERS = {
   },
   medical: {
     email: 'clinique@receptionai.com',
-    password: 'medical123',
+    password: import.meta.env.VITE_DEV_MEDICAL_PASSWORD || 'medical123',
     name: 'Clinique Santé',
     role: 'client' as const,
     plan: 'elite' as const,
@@ -40,7 +40,7 @@ export const DEV_USERS = {
 // Function to create demo users in Supabase (for development setup)
 export async function createDemoUsers() {
   const users = Object.values(DEV_USERS)
-  
+
   for (const user of users) {
     try {
       const { error } = await supabase.auth.signUp({
@@ -55,14 +55,14 @@ export async function createDemoUsers() {
           }
         }
       })
-      
+
       if (error) {
-        console.log(`User ${user.email} might already exist:`, error.message)
+        // User might already exist - continue with next user
       } else {
-        console.log(`Created demo user: ${user.email}`)
+        // Demo user created successfully
       }
     } catch (err) {
-      console.error(`Error creating user ${user.email}:`, err)
+      // Error creating demo user - continue with next user
     }
   }
 }

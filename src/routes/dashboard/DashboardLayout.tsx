@@ -3,7 +3,7 @@ import { getCurrentUser, logout } from "@/lib/store"
 import { PolymorphicLayout } from "@/components/layout/PolymorphicLayout"
 
 import { useState, useEffect } from "react"
-import type { User } from "@/lib/types"
+import type { User, BusinessType, Plan } from "@/lib/types"
 
 export default function DashboardLayout() {
   const navigate = useNavigate()
@@ -35,10 +35,14 @@ export default function DashboardLayout() {
     return <Navigate to="/admin" replace />
   }
 
+  // Safely cast with fallback defaults
+  const businessType: BusinessType = (user.sector as BusinessType) || "restaurant"
+  const tier: Plan = (user.plan as Plan) || "starter"
+
   return (
     <PolymorphicLayout
-      businessType={(user.sector || "restaurant") as any}
-      tier={(user.plan || "starter") as any}
+      businessType={businessType}
+      tier={tier}
       companyName={user.companyName || ""}
       userName={user.name}
       userEmail={user.email}

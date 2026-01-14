@@ -1,7 +1,28 @@
 export type UserRole = "admin" | "client"
 export type Plan = "starter" | "pro" | "elite"
-export type BusinessType = "restaurant" | "beauty" | "fitness" | "medical" | "legal" | "real_estate" | "automotive" | "trades" | "dentiste" | "garage" | "immobilier" | "juridique" | "beaute" | "sport" | "autoecole" | "veterinaire" | "clinique";
+export type BusinessType = "restaurant" | "beauty" | "beaute" | "fitness" | "medical" | "dentiste" | "clinique" | "veterinaire" | "juridique" | "legal" | "real_estate" | "immobilier" | "automotive" | "garage" | "autoecole" | "trades" | "sport";
 export type Sector = BusinessType // Legacy alias for compatibility
+
+// Settings interfaces
+export interface AgentPromo {
+  id: string
+  natural_text: string
+  active: boolean
+  target_items?: string[]
+  push_mode?: boolean
+  created_at?: string
+}
+
+export interface RestaurantConfig {
+  menu_items?: StockItem[]
+  promos?: AgentPromo // Changed from generic Promo to specific AgentPromo
+  [key: string]: unknown
+}
+
+export interface UserSettings {
+  restaurant_config?: RestaurantConfig
+  [key: string]: unknown
+}
 
 export interface User {
   id: string
@@ -13,7 +34,7 @@ export interface User {
   sector?: Sector
   plan?: Plan
   webhookUrl?: string
-  settings?: Record<string, unknown>
+  settings?: UserSettings
   createdAt: string
 }
 
@@ -25,7 +46,7 @@ export interface RDV {
   phone?: string
   date: string
   time: string
-  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled"
+  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" | "vip"
   notes?: string
   // Restaurant specific
   guests?: number
@@ -42,6 +63,13 @@ export interface RDV {
   repairType?: string
   estimatedCost?: number
   technicalNotes?: string
+  // Metadata for additional data
+  metadata?: {
+    occasion?: string
+    order_type?: 'delivery' | 'takeaway' | 'dine_in'
+    special_requests?: string[] | string
+    [key: string]: unknown
+  }
 }
 
 export interface StockItem {
@@ -87,15 +115,13 @@ export interface CallLog {
 
 export const SECTORS: { value: Sector; label: string; icon: string }[] = [
   { value: "restaurant", label: "Restaurant", icon: "🍽️" },
-  { value: "dentiste", label: "Dentiste", icon: "🦷" },
-  { value: "garage", label: "Garage", icon: "🚗" },
-  { value: "immobilier", label: "Immobilier", icon: "🏠" },
-  { value: "juridique", label: "Juridique", icon: "⚖️" },
-  { value: "beaute", label: "Salon Beauté", icon: "💇" },
-  { value: "sport", label: "Salle Sport", icon: "🏋️" },
-  { value: "autoecole", label: "Auto-école", icon: "📚" },
-  { value: "veterinaire", label: "Vétérinaire", icon: "🐶" },
-  { value: "clinique", label: "Clinique", icon: "🏥" },
+  { value: "beauty", label: "Salon Beauté", icon: "💇" },
+  { value: "fitness", label: "Salle Sport", icon: "🏋️" },
+  { value: "medical", label: "Clinique", icon: "🏥" },
+  { value: "legal", label: "Juridique", icon: "⚖️" },
+  { value: "real_estate", label: "Immobilier", icon: "🏠" },
+  { value: "automotive", label: "Garage", icon: "🚗" },
+  { value: "trades", label: "Artisans", icon: "🔧" },
 ]
 
 export const PLANS: { value: Plan; label: string; price: number; features: string[] }[] = [

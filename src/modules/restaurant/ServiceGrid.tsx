@@ -12,7 +12,7 @@ export type ServiceTable = {
 
 export function ServiceGrid({ tables }: { tables: ServiceTable[] }) {
   return (
-    <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {tables.map((t) => (
         (() => {
           const occupied = typeof t.guests === 'number' ? t.guests > 0 : t.active
@@ -20,16 +20,18 @@ export function ServiceGrid({ tables }: { tables: ServiceTable[] }) {
           return (
         <motion.div
           key={t.id}
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            'rounded-xl border p-4 transition-colors',
+            'rounded-xl border p-4 transition-all duration-200',
             'backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]',
             occupied
-              ? 'bg-white/5 border-orange-500/50 hover:border-orange-500/70'
-              : 'bg-white/3 border-white/8 opacity-60'
+              ? 'bg-white/5 border-orange-500/50 hover:border-orange-500/70 hover:shadow-lg'
+              : 'bg-white/3 border-white/8 opacity-60 hover:opacity-80'
           )}
-          style={occupied ? { boxShadow: '0 0 24px rgba(251, 146, 60, 0.25)' } : undefined}
+          style={occupied ? { 
+            boxShadow: '0 0 24px rgba(251, 146, 60, 0.25), 0 4px 12px rgba(251, 146, 60, 0.15)' 
+          } : undefined}
         >
           <div className="flex items-start justify-between">
             <div>

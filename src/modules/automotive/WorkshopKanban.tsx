@@ -54,7 +54,8 @@ export function WorkshopKanban({ tickets }: { tickets: WorkshopTicket[] }) {
                   'backdrop-blur-md transition-colors',
                   'bg-white/3 border-white/8 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]',
                   'hover:border-(--theme-primary)/60',
-                  t.status === 'lifting' && 'shadow-[0_0_15px_-3px_rgba(250,204,21,0.3)]'
+                  t.status === 'lifting' && 'shadow-[0_0_15px_-3px_rgba(250,204,21,0.3)]',
+                  t.status === 'done' && 'opacity-60' // Dim completed tickets
                 )}
               >
                 <div className="absolute left-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">

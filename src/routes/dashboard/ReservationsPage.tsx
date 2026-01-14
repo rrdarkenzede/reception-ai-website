@@ -46,7 +46,7 @@ export default function ReservationsPage() {
     const [formTime, setFormTime] = useState("")
     const [formGuests, setFormGuests] = useState("2")
     const [formNotes, setFormNotes] = useState("")
-    const [formStatus, setFormStatus] = useState<string>("pending")
+    const [formStatus, setFormStatus] = useState<RDV['status']>("pending")
 
     useEffect(() => {
         loadRdvs()
@@ -86,7 +86,7 @@ export default function ReservationsPage() {
             time: formTime,
             guests: parseInt(formGuests),
             notes: formNotes,
-            status: formStatus as any,
+            status: formStatus,
         })
 
         toast.success("Réservation créée avec succès")
@@ -116,7 +116,7 @@ export default function ReservationsPage() {
             time: formTime,
             guests: parseInt(formGuests),
             notes: formNotes,
-            status: formStatus as any,
+            status: formStatus,
         })
 
         toast.success("Réservation mise à jour")
@@ -193,7 +193,7 @@ export default function ReservationsPage() {
             {isEdit && (
                 <div className="space-y-2">
                     <Label>Statut</Label>
-                    <Select value={formStatus} onValueChange={setFormStatus}>
+                    <Select value={formStatus} onValueChange={(v) => setFormStatus(v as RDV['status'])}>
                         <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>

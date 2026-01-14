@@ -343,27 +343,35 @@ export function useBusinessConfig(businessType: BusinessType | string | undefine
     // Get vocabulary
     const vocab = VOCABULARY_MAP[normalizedType] || VOCABULARY_MAP.restaurant;
     
-    // Create format function
-    const formatMetadata = (json: Record<string, unknown>): FormattedMetadata => {
-      if (!json || Object.keys(json).length === 0) {
+    /**
+     * Formats metadata based on business type with null safety and fallbacks
+     * @param json - Raw metadata object from database
+     * @returns Formatted metadata with safe defaults
+     */
+    const formatMetadata = (json: Record<string, unknown> | null | undefined): FormattedMetadata => {
+      // Handle null/undefined input safely
+      if (!json || typeof json !== 'object' || Object.keys(json).length === 0) {
         return { title: 'Aucune donnée' };
       }
 
+      // Ensure json is a proper Record object
+      const safeJson = json as Record<string, unknown>;
+
       switch (normalizedType) {
         case 'automotive':
-          return formatAutomotiveMetadata(json);
+          return formatAutomotiveMetadata(safeJson);
         case 'medical':
-          return formatMedicalMetadata(json);
+          return formatMedicalMetadata(safeJson);
         case 'restaurant':
-          return formatRestaurantMetadata(json);
+          return formatRestaurantMetadata(safeJson);
         case 'beauty':
-          return formatBeautyMetadata(json);
+          return formatBeautyMetadata(safeJson);
         case 'trades':
-          return formatTradesMetadata(json);
+          return formatTradesMetadata(safeJson);
         case 'real_estate':
-          return formatRealEstateMetadata(json);
+          return formatRealEstateMetadata(safeJson);
         default:
-          return formatGenericMetadata(json);
+          return formatGenericMetadata(safeJson);
       }
     };
 
