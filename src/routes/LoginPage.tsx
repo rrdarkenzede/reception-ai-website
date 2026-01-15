@@ -118,38 +118,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo Accounts */}
-          <div className="mt-6 pt-6 border-t border-border/50">
-            <p className="text-xs text-muted-foreground mb-3 text-center">Comptes de démonstration</p>
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs bg-white/5 border-white/10"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setEmail('admin@receptionai.com')
-                  setPassword('admin123')
-                }}
-              >
-                Admin: admin@receptionai.com
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs bg-white/5 border-white/10"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setEmail('entreprise@receptionai.com')
-                  setPassword('entreprise123')
-                }}
-              >
-                Entreprise: entreprise@receptionai.com
-              </Button>
-            </div>
-          </div>
+
 
           {/* Contact info */}
           <div className="mt-8 pt-6 border-t border-border/50 text-center">
