@@ -176,7 +176,7 @@ export default function CallsPage() {
                             <div className="text-2xl font-bold text-red-500 mt-1">{missedCalls}</div>
                         </div>
                         <div className="glass-card rounded-xl p-4 border-border/30">
-                            <div className="text-sm text-muted-foreground">Durée moyenne</div>
+                            <div className="text-sm text-muted-foreground">Durée moy.</div>
                             <div className="text-2xl font-bold text-foreground mt-1">{formatDuration(Math.round(avgDuration))}</div>
                         </div>
                     </>
@@ -186,8 +186,8 @@ export default function CallsPage() {
             {isEmpty ? (
                 <div className="glass-strong rounded-2xl border-border/30 p-10 text-center">
                     <PhoneOff className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <div className="mt-4 text-lg font-semibold text-foreground">No calls yet</div>
-                    <div className="mt-1 text-sm text-muted-foreground">Your call log will appear here once the system starts receiving calls.</div>
+                    <div className="mt-4 text-lg font-semibold text-foreground">Aucun appel pour le moment</div>
+                    <div className="mt-1 text-sm text-muted-foreground">Le journal d'appels apparaîtra ici dès que le système commencera à recevoir des appels.</div>
                 </div>
             ) : null}
 
@@ -197,7 +197,7 @@ export default function CallsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         className="pl-10"
-                        placeholder="Search transcript..."
+                        placeholder="Rechercher..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -222,9 +222,9 @@ export default function CallsPage() {
                         <TableRow>
                             <TableHead>Status</TableHead>
                             <TableHead>Date</TableHead>
-                            <TableHead>Metadata</TableHead>
+                            <TableHead>Détails</TableHead>
                             <TableHead>Sentiment</TableHead>
-                            <TableHead>Recording</TableHead>
+                            <TableHead>Enreg.</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -308,7 +308,7 @@ export default function CallsPage() {
                                                 className="gap-2"
                                             >
                                                 <Play className="h-4 w-4" />
-                                                Play
+                                                Écouter
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -321,14 +321,14 @@ export default function CallsPage() {
 
             <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
-                    Page {page} / {pageCount} • {filteredCalls.length} results
+                    Page {page} / {pageCount} • {filteredCalls.length} résultats
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                        Prev
+                        Préc.
                     </Button>
                     <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>
-                        Next
+                        Suiv.
                     </Button>
                 </div>
             </div>

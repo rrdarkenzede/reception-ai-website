@@ -13,7 +13,21 @@ import { Slider } from "@/components/ui/slider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair } from "lucide-react"
+import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair, Headphones, MessageSquare } from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
@@ -320,15 +334,35 @@ export default function SettingsPage() {
                 if (u) {
                     setRestaurantName(u.companyName || "")
                     
+                    // Also fetch restaurant settings if user has a restaurantId
+                    let restaurantSettings: Record<string, unknown> = {}
+                    if (u.restaurantId) {
+                        const { data: restData } = await supabase
+                            .from('restaurants')
+                            .select('settings')
+                            .eq('id', u.restaurantId)
+                            .single()
+                        
+                        if (restData?.settings && isRecord(restData.settings)) {
+                            restaurantSettings = restData.settings
+                        }
+                    }
+                    
                     const settingsRaw = u.settings || {}
                     const settings = isRecord(settingsRaw) ? settingsRaw : {}
                     
                     // Load basic fields
                     if (typeof settings.phone_forwarding === 'string') setPhoneForwarding(settings.phone_forwarding)
                     
-                    // Load Restaurant Config
-                    const rConfig = isRecord(settings.restaurant_config) ? settings.restaurant_config : {}
-                    if (typeof rConfig.welcome_message === 'string') setWelcomeMessage(rConfig.welcome_message)
+                    // Load Restaurant Config - prioritize restaurant settings over profile settings
+                    const rConfigFromRest = isRecord(restaurantSettings.restaurant_config) ? restaurantSettings.restaurant_config : {}
+                    const rConfig = isRecord(settings.restaurant_config) ? { ...settings.restaurant_config, ...rConfigFromRest } : rConfigFromRest
+                    
+                    // Welcome message: prioritize restaurant.settings -> profile.settings
+                    const welcomeMsg = typeof rConfigFromRest.welcome_message === 'string' 
+                        ? rConfigFromRest.welcome_message 
+                        : (typeof rConfig.welcome_message === 'string' ? rConfig.welcome_message : '')
+                    setWelcomeMessage(welcomeMsg)
                     if (typeof rConfig.max_capacity === 'number') setMaxCapacity(rConfig.max_capacity)
                     if (typeof rConfig.max_capacity === 'number') setMaxCapacity(rConfig.max_capacity)
                     if (typeof rConfig.rush_threshold === 'number') setRushThreshold(rConfig.rush_threshold)
@@ -683,6 +717,125 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </TabsContent>
+
+            {/* SUPPORT BUTTON - Fixed at bottom */}
+            <SupportButton user={user} />
         </Tabs>
+    )
+}
+
+// Support Button Component
+function SupportButton({ user }: { user: User }) {
+    const [open, setOpen] = useState(false)
+    const [category, setCategory] = useState('')
+    const [subject, setSubject] = useState('')
+    const [message, setMessage] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+
+        try {
+            const { error } = await supabase
+                .from('support_tickets')
+                .insert({
+                    profile_id: user.id,
+                    restaurant_id: user.restaurantId,
+                    category: category || 'other',
+                    subject: subject,
+                    message: message,
+                    status: 'open',
+                    priority: 'normal'
+                })
+
+            if (error) throw error
+
+            toast.success('Demande envoyée ! Notre équipe vous recontactera rapidement.')
+            setOpen(false)
+            setCategory('')
+            setSubject('')
+            setMessage('')
+        } catch (error) {
+            console.error('Error:', error)
+            toast.error('Erreur lors de l\'envoi')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="w-full mt-8 py-6 border-dashed border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-cyan-400 gap-3 text-base"
+                >
+                    <Headphones className="w-5 h-5" />
+                    🛠️ Demander une modification / Support
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="glass-strong border-white/10 max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-foreground flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-cyan-400" />
+                        Contacter le Support
+                    </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div className="p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                        <div className="text-sm font-medium text-foreground">{user.companyName}</div>
+                        <div className="text-xs text-muted-foreground">{user.email}</div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Type de demande</Label>
+                        <Select value={category} onValueChange={setCategory} required>
+                            <SelectTrigger className="bg-secondary/50">
+                                <SelectValue placeholder="Sélectionnez..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="menu_change">📋 Modification du Menu</SelectItem>
+                                <SelectItem value="bug">🐛 Signaler un Bug</SelectItem>
+                                <SelectItem value="feature">✨ Nouvelle Fonctionnalité</SelectItem>
+                                <SelectItem value="billing">💳 Facturation</SelectItem>
+                                <SelectItem value="other">❓ Autre</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Sujet</Label>
+                        <Input
+                            placeholder="Ex: Changer le prix du Burger à 21€"
+                            value={subject}
+                            onChange={(e) => setSubject(e.target.value)}
+                            required
+                            className="bg-secondary/50"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Message</Label>
+                        <Textarea
+                            placeholder="Décrivez votre demande en détail..."
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            required
+                            rows={4}
+                            className="bg-secondary/50 resize-none"
+                        />
+                    </div>
+
+                    <Button
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Envoi...' : 'Envoyer ma demande'}
+                    </Button>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }

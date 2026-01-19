@@ -1,58 +1,70 @@
 import { Link } from "react-router-dom"
-import { Target, Twitter, Linkedin, Github } from "lucide-react"
+import { Target, Headphones } from "lucide-react"
 
 const footerLinks = {
   product: [
     { label: "Fonctionnalités", href: "#features" },
-    { label: "Tarifs", href: "#pricing" },
-    { label: "Secteurs", href: "#sectors" },
+    { label: "Cas d'usage", href: "#use-cases" },
+    { label: "Offres", href: "#offers" },
     { label: "FAQ", href: "#faq" },
   ],
   company: [
     { label: "À propos", to: "/about" },
     { label: "Blog", to: "/blog" },
-    { label: "Contact", to: "/contact" },
+  ],
+  support: [
+    { label: "Centre de Support", to: "/contact" },
+    { label: "Espace Client", to: "/login" },
   ],
   legal: [
+    { label: "Mentions Légales", to: "/legal/terms" },
+    { label: "CGV", to: "/legal/terms" },
     { label: "Confidentialité", to: "/legal/privacy" },
-    { label: "CGU", to: "/legal/terms" },
   ],
 }
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/50 bg-secondary/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Target className="w-5 h-5 text-primary-foreground" />
+    <footer className="relative border-t border-white/5">
+      {/* Gradient line at top */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12">
+          {/* Brand & Description */}
+          <div className="col-span-2 md:col-span-5 lg:col-span-4">
+            <Link to="/" className="flex items-center gap-2.5 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Target className="w-5 h-5 text-white" />
               </div>
-              <span className="text-lg font-semibold text-foreground">ReceptionAI</span>
+              <span className="text-xl font-bold text-foreground">ReceptionAI</span>
             </Link>
-            <p className="text-sm text-muted-foreground mb-4">La réceptionniste intelligente qui ne dort jamais.</p>
-            <div className="flex gap-4">
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Github className="w-5 h-5" />
-              </a>
-            </div>
+            
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xs">
+              La première IA de réception qui s'intègre à votre écosystème. 
+              Réservations, Commandes, Support. 24/7.
+            </p>
+
+            {/* Support CTA */}
+            <Link 
+              to="/contact"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 text-cyan-400 hover:border-cyan-500/40 transition-all text-sm font-medium"
+            >
+              <Headphones className="w-4 h-4" />
+              Centre de Support
+            </Link>
           </div>
 
-          {/* Product */}
-          <div>
+          {/* Product links */}
+          <div className="col-span-1 md:col-span-2">
             <h4 className="text-sm font-semibold text-foreground mb-4">Produit</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <a 
+                    href={link.href} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     {link.label}
                   </a>
                 </li>
@@ -60,13 +72,16 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Company */}
-          <div>
+          {/* Company links */}
+          <div className="col-span-1 md:col-span-2">
             <h4 className="text-sm font-semibold text-foreground mb-4">Entreprise</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <Link to={link.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -74,13 +89,33 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Legal */}
-          <div>
+          {/* Support links */}
+          <div className="col-span-1 md:col-span-2">
+            <h4 className="text-sm font-semibold text-foreground mb-4">Support</h4>
+            <ul className="space-y-3">
+              {footerLinks.support.map((link) => (
+                <li key={link.label}>
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal links */}
+          <div className="col-span-1 md:col-span-2">
             <h4 className="text-sm font-semibold text-foreground mb-4">Légal</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <Link to={link.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link 
+                    to={link.to} 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -90,9 +125,15 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">© 2026 ReceptionAI. Tous droits réservés.</p>
-          <p className="text-sm text-muted-foreground">Made with ❤️ in France</p>
+        <div className="mt-16 pt-8 border-t border-white/5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              © 2026 ReceptionAI - Agence Certifiée. Tous droits réservés.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Made with ❤️ in Paris
+            </p>
+          </div>
         </div>
       </div>
     </footer>

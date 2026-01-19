@@ -20,6 +20,7 @@ import BookingsPage from '@/routes/dashboard/BookingsPage'
 import ReservationsPage from '@/routes/dashboard/ReservationsPage'
 import CallsPage from '@/routes/dashboard/CallsPage'
 import StockPage from '@/routes/dashboard/StockPage'
+import MenuPage from '@/routes/dashboard/MenuPage'
 import PromosPage from '@/routes/dashboard/PromosPage'
 import SettingsPage from '@/routes/dashboard/SettingsPage'
 import KitchenPage from '@/routes/dashboard/KitchenPage'
@@ -30,6 +31,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import AdminLayout from '@/routes/admin/AdminLayout'
 import AdminPage from '@/routes/admin/AdminPage'
 import AdminClientsPage from '@/routes/admin/AdminClientsPage'
+import AdminTicketsPage from '@/routes/admin/AdminTicketsPage'
 
 function App() {
   return (
@@ -60,7 +62,7 @@ function App() {
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="calls" element={<CallsPage />} />
           <Route path="stock" element={<StockPage />} />
-          <Route path="menu" element={<StockPage />} />
+          <Route path="menu" element={<MenuPage />} />
           <Route path="promos" element={<PromosPage />} />
           <Route path="marketing" element={<PromosPage />} />
           <Route path="settings" element={<SettingsPage />} />
@@ -71,6 +73,7 @@ function App() {
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route index element={<AdminPage />} />
           <Route path="clients" element={<AdminClientsPage />} />
+          <Route path="tickets" element={<AdminTicketsPage />} />
         </Route>
 
         {/* Fallback */}
