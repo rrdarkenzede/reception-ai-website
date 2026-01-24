@@ -42,6 +42,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import type { User } from "@/lib/types"
 
 interface MenuItem {
   id: string
@@ -73,6 +74,7 @@ const getCategoryIcon = (category: string) => {
 }
 
 export default function MenuPage() {
+  const [user, setUser] = useState<User | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -100,6 +102,7 @@ export default function MenuPage() {
   const loadMenuItems = async () => {
     try {
       const user = await getCurrentUser()
+      setUser(user)
       if (!user?.restaurantId) {
         setLoading(false)
         return
@@ -356,10 +359,22 @@ export default function MenuPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-3">
-                          <Switch
-                            checked={item.in_stock}
-                            onCheckedChange={(checked) => handleToggleStock(item, checked)}
-                          />
+                          <div 
+                            className={cn(user?.plan === 'free' && "opacity-50 cursor-not-allowed")}
+                            title={user?.plan === 'free' ? "Disponible uniquement avec le plan Pro" : ""}
+                          >
+                            <Switch
+                              checked={item.in_stock}
+                              onCheckedChange={(checked) => {
+                                if (user?.plan === 'free') {
+                                  toast.info("Le contrôle de rupture (Mode 86) nécessite le plan Pro ou Enterprise.")
+                                  return
+                                }
+                                handleToggleStock(item, checked)
+                              }}
+                              disabled={user?.plan === 'free'}
+                            />
+                          </div>
                           <span className={cn(
                             "text-xs font-medium min-w-[60px]",
                             item.in_stock ? "text-emerald-400" : "text-red-400"

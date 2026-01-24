@@ -13,7 +13,7 @@ import { Slider } from "@/components/ui/slider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair, Headphones, MessageSquare } from "lucide-react"
+import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair, Headphones, MessageSquare, Calendar } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -576,6 +576,23 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
 
+                {/* Holidays & Events (New Feature) */}
+                <Card className="glass-strong border-border/30 bg-purple-900/5 border-purple-500/20">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-purple-400">
+                            <Calendar className="w-5 h-5" />
+                            Jours Fériés & Événements
+                        </CardTitle>
+                        <CardDescription>Planifiez des fermetures exceptionnelles ou des messages spéciaux.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-center py-8 text-black/50 border border-dashed border-zinc-800 rounded-lg">
+                            <p className="font-medium text-muted-foreground">Bientôt disponible</p>
+                            <p className="text-sm text-muted-foreground mt-1">Gérez vos fermetures de Noël, jours fériés et événements spéciaux directement ici.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <Card className="glass-strong border-border/30">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -716,10 +733,7 @@ export default function SettingsPage() {
                         </Button>
                     </CardContent>
                 </Card>
-            </TabsContent>
-
-            {/* SUPPORT BUTTON - Fixed at bottom */}
-            <SupportButton user={user} />
+</TabsContent>
         </Tabs>
     )
 }

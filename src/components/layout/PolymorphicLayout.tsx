@@ -25,6 +25,7 @@ import {
     UtensilsCrossed,
     Phone,
     Megaphone,
+    LifeBuoy,
 } from 'lucide-react';
 
 // UI Components
@@ -80,6 +81,7 @@ const getNavItems = (): NavItem[] => {
         { icon: Phone, label: 'Journal d\'appels', href: '/dashboard/calls' },
         { icon: Megaphone, label: 'Marketing', href: '/dashboard/promos', minTier: 'pro' },
         { icon: ChefHat, label: 'Cuisine (KDS)', href: '/dashboard/kitchen', minTier: 'elite' },
+        { icon: LifeBuoy, label: 'Support', href: '/dashboard/support' },
         { icon: Settings, label: 'Paramètres', href: '/dashboard/settings' },
     ];
 

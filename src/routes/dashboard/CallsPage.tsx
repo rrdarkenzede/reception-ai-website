@@ -20,18 +20,42 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { Phone, Search, PhoneMissed, CheckCircle2, PhoneOff } from "lucide-react"
+import { Phone, Search, PhoneMissed, CheckCircle2, PhoneOff, CalendarPlus } from "lucide-react"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 export default function CallsPage() {
     const [calls, setCalls] = useState<CallLog[]>([])
-    const [, setUser] = useState<User | null>(null)
+    const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [page, setPage] = useState(1)
     const pageSize = 10
+
+    // Modal State
+    const [showNewModal, setShowNewModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [formData, setFormData] = useState({
+        clientName: '',
+        phone: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: '12:00',
+        guests: 2,
+        notes: ''
+    })
 
     useEffect(() => {
         let mounted = true
@@ -104,9 +128,61 @@ export default function CallsPage() {
     }
 
     const getStatusLabel = (status: CallLog["status"]) => {
-        if (status === "missed") return "Manqué"
+        if (status === "missed") return "Abandon" // Renamed from Manqué
         if (status === "completed") return "Réservé"
         return status || "-"
+    }
+
+    const handlePhoneClick = (phone: string) => {
+        if (!phone) return
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            window.location.href = `tel:${phone}`
+        } else {
+            navigator.clipboard.writeText(phone)
+            toast.info("Numéro copié !")
+        }
+    }
+
+    const handleCreateBooking = (call: CallLog) => {
+        setFormData({
+            clientName: call.clientName || '',
+            phone: call.phone || '',
+            date: format(new Date(), 'yyyy-MM-dd'),
+            time: '12:00',
+            guests: 2,
+            notes: `Réservation suite à l'appel de ${format(new Date(call.timestamp), 'HH:mm')}`
+        })
+        setShowNewModal(true)
+    }
+
+    const handleSaveBooking = async () => {
+        if (!user?.restaurantId) return
+        setIsSubmitting(true)
+
+        try {
+            const { error } = await supabase
+                .from('bookings')
+                .insert({
+                    restaurant_id: user.restaurantId,
+                    client_name: formData.clientName,
+                    booking_date: formData.date,
+                    booking_time: formData.time,
+                    guests: formData.guests,
+                    phone: formData.phone,
+                    notes: formData.notes,
+                    status: 'confirmed'
+                })
+
+            if (error) throw error
+            
+            toast.success("Réservation ajoutée")
+            setShowNewModal(false)
+        } catch (e) {
+            console.error(e)
+            toast.error("Erreur lors de la création")
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // Stats
@@ -146,7 +222,7 @@ export default function CallsPage() {
                             <div className="text-2xl font-bold text-green-500 mt-1">{completedCalls}</div>
                         </div>
                         <div className="glass-card rounded-xl p-4 border-border/30">
-                            <div className="text-sm text-muted-foreground">Manqués</div>
+                            <div className="text-sm text-muted-foreground">Abandons</div>
                             <div className="text-2xl font-bold text-red-500 mt-1">{missedCalls}</div>
                         </div>
                     </>
@@ -179,7 +255,7 @@ export default function CallsPage() {
                     <SelectContent>
                         <SelectItem value="all">Tous</SelectItem>
                         <SelectItem value="completed">Réservé</SelectItem>
-                        <SelectItem value="missed">Manqué</SelectItem>
+                        <SelectItem value="missed">Abandon</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -193,6 +269,7 @@ export default function CallsPage() {
                             <TableHead>Téléphone</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead>Statut</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -204,12 +281,13 @@ export default function CallsPage() {
                                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))}
                             </>
                         ) : pagedCalls.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                                     Aucun appel trouvé
                                 </TableCell>
                             </TableRow>
@@ -222,9 +300,13 @@ export default function CallsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-muted-foreground">
+                                        <Button 
+                                            variant="ghost" 
+                                            className="p-0 h-auto font-normal text-muted-foreground hover:text-cyan-400"
+                                            onClick={() => handlePhoneClick(call.phone)}
+                                        >
                                             {call.phone || "-"}
-                                        </div>
+                                        </Button>
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-foreground">{formatTimestamp(call.timestamp)}</div>
@@ -244,6 +326,17 @@ export default function CallsPage() {
                                                 {getStatusLabel(call.status)}
                                             </Badge>
                                         </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleCreateBooking(call)}
+                                            title="Créer une réservation"
+                                        >
+                                            <CalendarPlus className="h-4 w-4" />
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -265,6 +358,74 @@ export default function CallsPage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Modal de Réservation */}
+            <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Créer une Réservation</DialogTitle>
+                        <DialogDescription>
+                            Suite à l'appel de {formData.clientName || 'Client inconnu'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Date</Label>
+                                <Input 
+                                    type="date"
+                                    value={formData.date} 
+                                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Heure</Label>
+                                <Input 
+                                    type="time" 
+                                    value={formData.time} 
+                                    onChange={(e) => setFormData({...formData, time: e.target.value})} 
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Nom du client</Label>
+                                <Input 
+                                    value={formData.clientName} 
+                                    onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Téléphone</Label>
+                                <Input 
+                                    value={formData.phone} 
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Couverts</Label>
+                            <Input 
+                                type="number" 
+                                min={1} 
+                                value={formData.guests} 
+                                onChange={(e) => setFormData({...formData, guests: parseInt(e.target.value)})} 
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Notes</Label>
+                            <Textarea 
+                                value={formData.notes} 
+                                onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowNewModal(false)}>Annuler</Button>
+                        <Button onClick={handleSaveBooking} disabled={isSubmitting}>Enregistrer</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

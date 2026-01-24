@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { getCurrentUser, getRDVs } from '@/lib/store'
 import type { RDV, User } from '@/lib/types'
 import { format } from 'date-fns'
@@ -86,16 +87,46 @@ export default function KitchenPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Load data
+  // Load data & Realtime
   useEffect(() => {
+    let channel: any
+
     async function load() {
       const u = await getCurrentUser()
       setUser(u)
       if (!u) return
-      const rdvData = await getRDVs(u.id)
-      setRdvs(rdvData.length > 0 ? rdvData : MOCK_KITCHEN_ORDERS)
+      
+      const refreshData = async () => {
+        const rdvData = await getRDVs(u.id)
+        setRdvs(rdvData.length > 0 ? rdvData : MOCK_KITCHEN_ORDERS)
+      }
+
+      await refreshData()
+
+      // Realtime Subscription
+      if (u.restaurantId) {
+        channel = supabase
+          .channel('kitchen-orders')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'bookings',
+              filter: `restaurant_id=eq.${u.restaurantId}`
+            },
+            () => {
+              refreshData()
+            }
+          )
+          .subscribe()
+      }
     }
     load()
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   // Filter today's reservations and sort by time
@@ -149,14 +180,14 @@ export default function KitchenPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
         <ChefHat className="w-16 h-16 text-white animate-pulse" />
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen bg-black text-white p-6 space-y-6 transition-colors duration-1000 ${isRushMode ? 'bg-red-950/30' : ''}`}>
+    <div className={`min-h-screen bg-[#050505] text-white p-6 space-y-6 transition-colors duration-1000 ${isRushMode ? 'bg-red-950/30' : ''}`}>
       {/* Header with Giant Clock */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

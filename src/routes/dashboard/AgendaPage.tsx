@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, Users, Phone } from 'lucide-react';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, Users, Phone, Trash2 } from 'lucide-react';
 import { getCurrentUser, getRDVs } from '@/lib/store';
 import type { User, RDV } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,12 @@ import {
   isToday
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+
+import { supabase } from "@/lib/supabase"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,11 +44,25 @@ const itemVariants = {
 };
 
 export default function AgendaPage() {
-  const [, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [rdvs, setRdvs] = useState<RDV[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  
+  // Modals State
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingRdv, setEditingRdv] = useState<RDV | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [formData, setFormData] = useState({
+      clientName: '',
+      phone: '',
+      time: '12:00',
+      guests: 2,
+      notes: ''
+  })
 
   useEffect(() => {
     async function load() {
@@ -77,7 +97,7 @@ export default function AgendaPage() {
 
   const getEventsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return rdvs.filter(r => r.date === dateStr);
+    return rdvs.filter(r => r.date === dateStr && r.status !== 'cancelled');
   };
 
   const selectedDateEvents = useMemo(() => {
@@ -85,20 +105,18 @@ export default function AgendaPage() {
     return getEventsForDay(selectedDate);
   }, [selectedDate, rdvs]);
 
-  // Call customer - native dialer on mobile, clipboard on desktop
+  // Call customer handler
   const handleCall = (phoneNumber: string | undefined) => {
     if (!phoneNumber) {
       toast.error("Numéro de téléphone non disponible")
       return
     }
 
-    // Clean the phone number
     let cleanedNumber = phoneNumber.replace(/\s/g, '')
     if (cleanedNumber.startsWith('0')) {
       cleanedNumber = '+33' + cleanedNumber.substring(1)
     }
 
-    // Check if mobile/tablet (has touch)
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
     if (isMobile) {
@@ -107,6 +125,117 @@ export default function AgendaPage() {
       navigator.clipboard.writeText(cleanedNumber)
       toast.success(`Numéro copié : ${cleanedNumber}`)
     }
+  }
+
+  // Handlers
+  const handleCreateClick = () => {
+      setFormData({
+          clientName: '',
+          phone: '',
+          time: '12:00',
+          guests: 2,
+          notes: ''
+      })
+      setShowNewModal(true)
+  }
+
+  const handleEditClick = (rdv: RDV) => {
+      setEditingRdv(rdv)
+      setFormData({
+          clientName: rdv.clientName,
+          phone: rdv.phone || '',
+          time: rdv.time,
+          guests: rdv.guests || 2,
+          notes: rdv.notes || ''
+      })
+      setShowEditModal(true)
+  }
+
+  const handleSave = async () => {
+      if (!user?.restaurantId || !selectedDate) return
+      setIsSubmitting(true)
+
+      try {
+          const { error } = await supabase
+              .from('bookings')
+              .insert({
+                  restaurant_id: user.restaurantId,
+                  client_name: formData.clientName,
+                  booking_date: format(selectedDate, 'yyyy-MM-dd'),
+                  booking_time: formData.time,
+                  guests: formData.guests,
+                  phone: formData.phone,
+                  notes: formData.notes,
+                  status: 'confirmed'
+              })
+
+          if (error) throw error
+          
+          toast.success("Rendez-vous ajouté")
+          setShowNewModal(false)
+          // Reload
+          const r = await getRDVs(user.id)
+          setRdvs(r)
+      } catch (e) {
+          console.error(e)
+          toast.error("Erreur lors de la création")
+      } finally {
+          setIsSubmitting(false)
+      }
+  }
+
+  const handleUpdate = async () => {
+      if (!editingRdv) return
+      setIsSubmitting(true)
+
+      try {
+          const { error } = await supabase
+              .from('bookings')
+              .update({
+                  client_name: formData.clientName,
+                  booking_time: formData.time,
+                  guests: formData.guests,
+                  phone: formData.phone,
+                  notes: formData.notes
+              })
+              .eq('id', editingRdv.id)
+
+          if (error) throw error
+          
+          toast.success("Rendez-vous modifié")
+          setShowEditModal(false)
+          const r = await getRDVs(user!.id)
+          setRdvs(r)
+      } catch (e) {
+          console.error(e)
+          toast.error("Erreur mise à jour")
+      } finally {
+          setIsSubmitting(false)
+      }
+  }
+
+  const handleDelete = async () => {
+      if (!editingRdv) return
+      if (!confirm("Êtes-vous sûr de vouloir annuler ce RDV ?")) return
+      setIsSubmitting(true)
+      
+      try {
+          const { error } = await supabase
+              .from('bookings')
+              .update({ status: 'cancelled' })
+              .eq('id', editingRdv.id)
+
+          if (error) throw error
+          
+          toast.success("Rendez-vous annulé")
+          setShowEditModal(false)
+          const r = await getRDVs(user!.id)
+          setRdvs(r)
+      } catch (e) {
+          toast.error("Erreur suppression")
+      } finally {
+          setIsSubmitting(false)
+      }
   }
 
   if (loading) {
@@ -133,7 +262,7 @@ export default function AgendaPage() {
             Gérez vos rendez-vous et réservations
           </p>
         </div>
-        <Button className="gap-2 bg-primary hover:bg-primary/90">
+        <Button className="gap-2 bg-primary hover:bg-primary/90" onClick={handleCreateClick}>
           <Plus className="w-4 h-4" />
           Nouveau RDV
         </Button>
@@ -257,7 +386,7 @@ export default function AgendaPage() {
                 <div className="text-center py-12">
                   <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">Aucun rendez-vous</p>
-                  <Button variant="outline" size="sm" className="mt-4 gap-2">
+                  <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={handleCreateClick}>
                     <Plus className="w-4 h-4" />
                     Ajouter un RDV
                   </Button>
@@ -271,6 +400,7 @@ export default function AgendaPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
                       className="p-4 rounded-xl bg-secondary/30 border border-border/30 hover:bg-secondary/50 transition-colors cursor-pointer"
+                      onClick={() => handleEditClick(event)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <span className="font-semibold text-foreground">{event.clientName}</span>
@@ -319,6 +449,130 @@ export default function AgendaPage() {
           </Card>
         </motion.div>
       </div>
+
+      <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Nouveau Rendez-vous</DialogTitle>
+                <DialogDescription>
+                    Le {selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: fr }) : ''}
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Nom du client</Label>
+                        <Input 
+                            value={formData.clientName} 
+                            onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Téléphone</Label>
+                        <Input 
+                            value={formData.phone} 
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Heure</Label>
+                        <Input 
+                            type="time" 
+                            value={formData.time} 
+                            onChange={(e) => setFormData({...formData, time: e.target.value})} 
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Couverts</Label>
+                        <Input 
+                            type="number" 
+                            min={1} 
+                            value={formData.guests} 
+                            onChange={(e) => setFormData({...formData, guests: parseInt(e.target.value)})} 
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea 
+                        value={formData.notes} 
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setShowNewModal(false)}>Annuler</Button>
+                <Button onClick={handleSave} disabled={isSubmitting}>Enregistrer</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Modifier Rendez-vous</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Nom du client</Label>
+                        <Input 
+                            value={formData.clientName} 
+                            onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Téléphone</Label>
+                        <Input 
+                            value={formData.phone} 
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Heure</Label>
+                        <Input 
+                            type="time" 
+                            value={formData.time} 
+                            onChange={(e) => setFormData({...formData, time: e.target.value})} 
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Couverts</Label>
+                        <Input 
+                            type="number" 
+                            min={1} 
+                            value={formData.guests} 
+                            onChange={(e) => setFormData({...formData, guests: parseInt(e.target.value)})} 
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea 
+                        value={formData.notes} 
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                    />
+                </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+                <Button 
+                    variant="destructive" 
+                    className="mr-auto"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Annuler RDV
+                </Button>
+                <Button variant="outline" onClick={() => setShowEditModal(false)}>Fermer</Button>
+                <Button onClick={handleUpdate} disabled={isSubmitting}>Mettre à jour</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
