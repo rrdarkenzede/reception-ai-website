@@ -13,21 +13,8 @@ import { Slider } from "@/components/ui/slider"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair, Headphones, MessageSquare, Calendar } from "lucide-react"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import { Settings, Building2, User as UserIcon, Trash2, Plus, BrainCircuit, Clock, Zap, Armchair, Calendar } from "lucide-react"
+
 
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
@@ -50,6 +37,13 @@ type TableConfig = {
     name: string
     seats: number
     is_online_reservable: boolean
+}
+
+type Holiday = {
+    id: string
+    date: string
+    name: string
+    is_closed: boolean
 }
 
 const dayOrder: Array<{ key: DayKey; label: string }> = [
@@ -218,6 +212,7 @@ export default function SettingsPage() {
     const [tables, setTables] = useState<TableConfig[]>([])
     const [quotaIA, setQuotaIA] = useState(10)
     const [quotaMessage, setQuotaMessage] = useState("Nous sommes complets sur les réservations, mais nous gardons toujours des tables pour les clients de passage. Venez nous voir !")
+    const [holidays, setHolidays] = useState<Holiday[]>([])
 
     // Debounced settings update
     useEffect(() => {
@@ -246,7 +241,8 @@ export default function SettingsPage() {
                         rush_threshold: rushThreshold,
                         tables: tables,
                         quota_ia: quotaIA,
-                        quota_message: quotaMessage
+                        quota_message: quotaMessage,
+                        holidays: holidays
                     }
                 }
 
@@ -284,11 +280,10 @@ export default function SettingsPage() {
         tables, 
         quotaIA, 
         quotaMessage,
+        holidays,
         user, // Dependency on user is tricky if user object mutates, but we update it in the effect
         loading
     ])
-
-
 
     const handleAddTable = useCallback(() => {
         const newTable: TableConfig = {
@@ -317,6 +312,24 @@ export default function SettingsPage() {
             response: ''
         }
         setAiKnowledge(prev => [...prev, newNode])
+    }, [])
+
+    const addHoliday = useCallback(() => {
+        const newHoliday: Holiday = {
+            id: Date.now().toString(),
+            date: new Date().toISOString().split('T')[0],
+            name: "Férié",
+            is_closed: true
+        }
+        setHolidays(prev => [...prev, newHoliday])
+    }, [])
+    
+    const removeHoliday = useCallback((id: string) => {
+        setHolidays(prev => prev.filter(h => h.id !== id))
+    }, [])
+
+    const updateHoliday = useCallback((id: string, updates: Partial<Holiday>) => {
+        setHolidays(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h))
     }, [])
 
     useEffect(() => {
@@ -364,13 +377,13 @@ export default function SettingsPage() {
                         : (typeof rConfig.welcome_message === 'string' ? rConfig.welcome_message : '')
                     setWelcomeMessage(welcomeMsg)
                     if (typeof rConfig.max_capacity === 'number') setMaxCapacity(rConfig.max_capacity)
-                    if (typeof rConfig.max_capacity === 'number') setMaxCapacity(rConfig.max_capacity)
                     if (typeof rConfig.rush_threshold === 'number') setRushThreshold(rConfig.rush_threshold)
                     
                     // Load Room Config
                     if (Array.isArray(rConfig.tables)) setTables(rConfig.tables)
                     if (typeof rConfig.quota_ia === 'number') setQuotaIA(rConfig.quota_ia)
                     if (typeof rConfig.quota_message === 'string') setQuotaMessage(rConfig.quota_message)
+                    if (Array.isArray(rConfig.holidays)) setHolidays(rConfig.holidays)
 
                     // Safe business hours parsing
                     const bhRaw = settings.business_hours
@@ -453,6 +466,7 @@ export default function SettingsPage() {
                         )}
                     </div>
                 </div>
+
             </div>
 
             <TabsList className="bg-zinc-900/50 p-1 rounded-xl border border-white/5 h-auto grid grid-cols-3 w-full md:w-auto gap-2">
@@ -586,9 +600,43 @@ export default function SettingsPage() {
                         <CardDescription>Planifiez des fermetures exceptionnelles ou des messages spéciaux.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center py-8 text-black/50 border border-dashed border-zinc-800 rounded-lg">
-                            <p className="font-medium text-muted-foreground">Bientôt disponible</p>
-                            <p className="text-sm text-muted-foreground mt-1">Gérez vos fermetures de Noël, jours fériés et événements spéciaux directement ici.</p>
+                        <div className="space-y-4">
+                            {holidays.map((h) => (
+                                <div key={h.id} className="flex items-center gap-3 p-3 bg-muted/20 border border-border/30 rounded-lg">
+                                    <Input 
+                                        type="date" 
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={h.date} 
+                                        onChange={(e) => updateHoliday(h.id, { date: e.target.value })}
+                                        className="w-40 [color-scheme:dark]"
+                                    />
+                                    <Input 
+                                        value={h.name}
+                                        onChange={(e) => updateHoliday(h.id, { name: e.target.value })}
+                                        placeholder="Nom (ex: Noël)"
+                                        className="flex-1"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-xs whitespace-nowrap">Fermé ?</Label>
+                                        <Switch 
+                                            checked={h.is_closed}
+                                            onCheckedChange={(checked) => updateHoliday(h.id, { is_closed: checked })}
+                                        />
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => removeHoliday(h.id)} className="text-destructive hover:bg-destructive/10">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            {holidays.length === 0 && (
+                                <div className="text-center py-6 text-muted-foreground border border-dashed border-zinc-800 rounded-lg">
+                                    Aucun jour spécial configuré.
+                                </div>
+                            )}
+                            <Button variant="outline" onClick={addHoliday} className="w-full border-dashed">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Ajouter une date
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -739,117 +787,4 @@ export default function SettingsPage() {
 }
 
 // Support Button Component
-function SupportButton({ user }: { user: User }) {
-    const [open, setOpen] = useState(false)
-    const [category, setCategory] = useState('')
-    const [subject, setSubject] = useState('')
-    const [message, setMessage] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setIsLoading(true)
-
-        try {
-            const { error } = await supabase
-                .from('support_tickets')
-                .insert({
-                    profile_id: user.id,
-                    restaurant_id: user.restaurantId,
-                    category: category || 'other',
-                    subject: subject,
-                    message: message,
-                    status: 'open',
-                    priority: 'normal'
-                })
-
-            if (error) throw error
-
-            toast.success('Demande envoyée ! Notre équipe vous recontactera rapidement.')
-            setOpen(false)
-            setCategory('')
-            setSubject('')
-            setMessage('')
-        } catch (error) {
-            console.error('Error:', error)
-            toast.error('Erreur lors de l\'envoi')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button
-                    variant="outline"
-                    className="w-full mt-8 py-6 border-dashed border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/50 text-cyan-400 gap-3 text-base"
-                >
-                    <Headphones className="w-5 h-5" />
-                    🛠️ Demander une modification / Support
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="glass-strong border-white/10 max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-foreground flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-cyan-400" />
-                        Contacter le Support
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <div className="p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
-                        <div className="text-sm font-medium text-foreground">{user.companyName}</div>
-                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Type de demande</Label>
-                        <Select value={category} onValueChange={setCategory} required>
-                            <SelectTrigger className="bg-secondary/50">
-                                <SelectValue placeholder="Sélectionnez..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="menu_change">📋 Modification du Menu</SelectItem>
-                                <SelectItem value="bug">🐛 Signaler un Bug</SelectItem>
-                                <SelectItem value="feature">✨ Nouvelle Fonctionnalité</SelectItem>
-                                <SelectItem value="billing">💳 Facturation</SelectItem>
-                                <SelectItem value="other">❓ Autre</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Sujet</Label>
-                        <Input
-                            placeholder="Ex: Changer le prix du Burger à 21€"
-                            value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
-                            required
-                            className="bg-secondary/50"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Message</Label>
-                        <Textarea
-                            placeholder="Décrivez votre demande en détail..."
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            required
-                            rows={4}
-                            className="bg-secondary/50 resize-none"
-                        />
-                    </div>
-
-                    <Button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Envoi...' : 'Envoyer ma demande'}
-                    </Button>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}

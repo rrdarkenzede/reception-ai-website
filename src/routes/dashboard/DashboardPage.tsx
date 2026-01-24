@@ -56,17 +56,20 @@ export default function DashboardPage() {
       })
     }
 
-    // Add sample urgent action for demo
-    result.push({
-      id: 'urgent-callback',
-      title: 'Rappeler client VIP',
-      type: 'urgent' as const,
-      count: 3
-    })
+    // Filter for urgent/missed calls
+    const urgentCalls = calls.filter(c => c.status === 'missed' || c.sentiment === 'urgent' || c.metadata?.is_urgent)
+
+    if (urgentCalls.length > 0) {
+      result.push({
+        id: 'urgent-callback',
+        title: `${urgentCalls.length} appel${urgentCalls.length > 1 ? 's' : ''} à traiter`,
+        type: 'urgent' as const,
+        count: urgentCalls.length
+      })
+    }
 
     return result
-  }, [rdvs])
-
+  }, [rdvs, calls])
   // Generate events for weekly agenda
   const agendaEvents = useMemo(() => {
     return rdvs.map(rdv => ({

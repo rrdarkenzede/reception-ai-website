@@ -27,6 +27,7 @@ import KitchenPage from '@/routes/dashboard/KitchenPage'
 import ClientsPage from '@/routes/dashboard/ClientsPage'
 import AgendaPage from '@/routes/dashboard/AgendaPage'
 import ServicesPage from '@/routes/dashboard/ServicesPage'
+import SupportPage from '@/routes/dashboard/SupportPage'
 
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
@@ -73,6 +74,7 @@ function App() {
           <Route path="marketing" element={<PromosPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="kitchen" element={<KitchenPage />} />
+          <Route path="support" element={<SupportPage />} />
         </Route>
 
         {/* Admin panel */}

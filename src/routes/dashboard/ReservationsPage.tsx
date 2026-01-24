@@ -365,6 +365,9 @@ export default function ReservationsPage() {
                                                 <DialogContent>
                                                     <DialogHeader>
                                                         <DialogTitle>Modifier la réservation</DialogTitle>
+                                                        <DialogDescription>
+                                                            Mettez à jour les informations de la réservation.
+                                                        </DialogDescription>
                                                     </DialogHeader>
                                                     <RdvForm isEdit />
                                                     <DialogFooter>

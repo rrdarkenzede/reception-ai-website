@@ -5,6 +5,16 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { 
     Ticket, 
     CheckCircle2, 
@@ -13,7 +23,9 @@ import {
     User,
     Building2,
     MessageSquare,
-    RefreshCw
+    RefreshCw,
+    Reply,
+    Send
 } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -32,6 +44,8 @@ interface SupportTicket {
     status: string
     priority: string
     created_at: string
+    admin_response: string | null
+    responded_at: string | null
     // Joined data
     profiles?: { company_name: string; email: string } | null
     restaurants?: { name: string } | null
@@ -56,6 +70,11 @@ export default function AdminTicketsPage() {
     const [tickets, setTickets] = useState<SupportTicket[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+    
+    // Reply modal state
+    const [replyingTicket, setReplyingTicket] = useState<SupportTicket | null>(null)
+    const [replyText, setReplyText] = useState("")
+    const [isSending, setIsSending] = useState(false)
 
     const loadTickets = async () => {
         try {
@@ -116,6 +135,61 @@ export default function AdminTicketsPage() {
                 t.id === ticket.id ? { ...t, status: ticket.status } : t
             ))
         }
+    }
+
+    const handleReply = async () => {
+        if (!replyingTicket || !replyText.trim()) return
+        setIsSending(true)
+
+        try {
+            // 1. Update ticket with admin response
+            const { error: ticketError } = await supabase
+                .from('support_tickets')
+                .update({ 
+                    admin_response: replyText.trim(),
+                    responded_at: new Date().toISOString(),
+                    status: 'resolved',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', replyingTicket.id)
+
+            if (ticketError) throw ticketError
+
+            // 2. Create notification for user if they have a profile
+            if (replyingTicket.profile_id) {
+                await supabase
+                    .from('notifications')
+                    .insert({
+                        profile_id: replyingTicket.profile_id,
+                        type: 'support_reply',
+                        title: '📬 Réponse du Support',
+                        message: `Votre ticket "${replyingTicket.subject}" a reçu une réponse.`,
+                        action_url: '/dashboard/support',
+                        read: false
+                    })
+            }
+
+            // Update local state
+            setTickets(prev => prev.map(t => 
+                t.id === replyingTicket.id 
+                    ? { ...t, admin_response: replyText.trim(), status: 'resolved', responded_at: new Date().toISOString() } 
+                    : t
+            ))
+
+            toast.success('Réponse envoyée !')
+            setReplyingTicket(null)
+            setReplyText("")
+        } catch (error) {
+            console.error('Error sending reply:', error)
+            toast.error("Erreur lors de l'envoi de la réponse")
+        } finally {
+            setIsSending(false)
+        }
+    }
+
+    const openReplyModal = (ticket: SupportTicket) => {
+        setReplyingTicket(ticket)
+        setReplyText(ticket.admin_response || "")
     }
 
     const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress')
@@ -226,6 +300,7 @@ export default function AdminTicketsPage() {
                                 key={ticket.id} 
                                 ticket={ticket} 
                                 onToggle={() => handleToggleStatus(ticket)}
+                                onReply={() => openReplyModal(ticket)}
                             />
                         ))}
                     </CardContent>
@@ -247,6 +322,7 @@ export default function AdminTicketsPage() {
                                 key={ticket.id} 
                                 ticket={ticket} 
                                 onToggle={() => handleToggleStatus(ticket)}
+                                onReply={() => openReplyModal(ticket)}
                             />
                         ))}
                         {resolvedTickets.length > 5 && (
@@ -266,14 +342,57 @@ export default function AdminTicketsPage() {
                     <p className="text-muted-foreground">Les demandes de support apparaîtront ici.</p>
                 </div>
             )}
+
+            {/* Reply Modal */}
+            <Dialog open={!!replyingTicket} onOpenChange={(open) => !open && setReplyingTicket(null)}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Reply className="w-5 h-5 text-cyan-400" />
+                            Répondre au ticket
+                        </DialogTitle>
+                        <DialogDescription>
+                            {replyingTicket?.subject}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+                            <p className="text-sm text-muted-foreground mb-2">Message original :</p>
+                            <p className="text-sm text-foreground">{replyingTicket?.message}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Votre réponse</Label>
+                            <Textarea
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder="Tapez votre réponse ici..."
+                                rows={5}
+                                className="resize-none"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setReplyingTicket(null)}>Annuler</Button>
+                        <Button 
+                            onClick={handleReply} 
+                            disabled={isSending || !replyText.trim()}
+                            className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-black"
+                        >
+                            <Send className="w-4 h-4" />
+                            {isSending ? 'Envoi...' : 'Envoyer'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
 
-function TicketRow({ ticket, onToggle }: { ticket: SupportTicket; onToggle: () => void }) {
+function TicketRow({ ticket, onToggle, onReply }: { ticket: SupportTicket; onToggle: () => void; onReply: () => void }) {
     const isResolved = ticket.status === 'resolved' || ticket.status === 'closed'
     const userName = ticket.profiles?.company_name || ticket.guest_name || 'Visiteur'
     const userEmail = ticket.profiles?.email || ticket.guest_email || '-'
+    const hasResponse = !!ticket.admin_response
 
     return (
         <div className={`p-4 rounded-lg border border-white/5 bg-white/2 hover:bg-white/5 transition-colors ${isResolved ? 'opacity-60' : ''}`}>
@@ -296,6 +415,11 @@ function TicketRow({ ticket, onToggle }: { ticket: SupportTicket; onToggle: () =
                         <Badge variant="outline" className="text-xs">
                             {categoryLabels[ticket.category] || ticket.category}
                         </Badge>
+                        {hasResponse && (
+                            <Badge className="bg-green-500/20 text-green-400 text-xs">
+                                ✓ Répondu
+                            </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                             {format(new Date(ticket.created_at), "dd MMM à HH:mm", { locale: fr })}
                         </span>
@@ -309,19 +433,37 @@ function TicketRow({ ticket, onToggle }: { ticket: SupportTicket; onToggle: () =
                         {ticket.message}
                     </p>
 
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                            {ticket.profile_id ? (
-                                <Building2 className="w-3 h-3" />
-                            ) : (
-                                <User className="w-3 h-3" />
-                            )}
-                            {userName}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {userEmail}
-                        </span>
+                    {hasResponse && (
+                        <div className="p-2 rounded bg-cyan-500/10 border border-cyan-500/20 mb-2">
+                            <p className="text-xs text-cyan-400 mb-1">Réponse admin :</p>
+                            <p className="text-sm text-foreground line-clamp-2">{ticket.admin_response}</p>
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                                {ticket.profile_id ? (
+                                    <Building2 className="w-3 h-3" />
+                                ) : (
+                                    <User className="w-3 h-3" />
+                                )}
+                                {userName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <MessageSquare className="w-3 h-3" />
+                                {userEmail}
+                            </span>
+                        </div>
+                        <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 gap-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                            onClick={onReply}
+                        >
+                            <Reply className="w-3 h-3" />
+                            {hasResponse ? 'Modifier' : 'Répondre'}
+                        </Button>
                     </div>
                 </div>
             </div>

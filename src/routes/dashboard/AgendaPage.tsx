@@ -513,6 +513,9 @@ export default function AgendaPage() {
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Modifier Rendez-vous</DialogTitle>
+                <DialogDescription>
+                    Modifiez les détails du rendez-vous sélectionné.
+                </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
