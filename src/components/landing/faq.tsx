@@ -72,10 +72,12 @@ export function FAQ() {
             Vous avez d'autres questions ?
           </p>
           <a 
-            href="mailto:contact@reception-ai.com" 
-            className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+            href="https://cal.com/reception-ai/demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-[#00f2ff] hover:text-[#00f2ff]/80 font-medium transition-colors"
           >
-            Contactez notre équipe
+            Réserver un appel découverte
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>

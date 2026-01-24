@@ -327,18 +327,49 @@ export const updateRetellAgentId = async (id: string, agentId: string | null) =>
 }
 
 export const deleteRestaurant = async (id: string) => {
-  // Cascade delete: bookings, stock_items, promos, call_logs, profiles linked to this restaurant
-  // Then delete the restaurant itself
-  // Note: Some of these may fail silently if no rows exist
-  await supabase.from('bookings').delete().eq('restaurant_id', id)
-  await supabase.from('stock_items').delete().eq('restaurant_id', id)
-  await supabase.from('promos').delete().eq('restaurant_id', id)
-  await supabase.from('call_logs').delete().eq('restaurant_id', id)
+  // 1. Get associated profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('restaurant_id', id)
+
+  const profileIds = profiles?.map(p => p.id) || []
+
+  // 2. Delete items linked via profile_id
+  if (profileIds.length > 0) {
+    const tablesUsingProfileId = [
+      'stock_items', 'promos', 'resources', 'locations', 
+      'knowledge_base', 'booking_notes', 'triggers', 'services'
+    ]
+    
+    // Execute deletions in parallel for profile-linked tables
+    await Promise.all(
+      tablesUsingProfileId.map(table => 
+        supabase.from(table).delete().in('profile_id', profileIds)
+      )
+    )
+    
+    // Separate for support_tickets to avoid double delete logic confusion (handled below via restaurant_id is safer)
+    await supabase.from('support_tickets').delete().in('profile_id', profileIds)
+  }
+
+  // 3. Delete items linked via restaurant_id
+  const tablesUsingRestaurantId = [
+    'menu_items', 'restaurant_tables', 'support_tickets',
+    'bookings', 'call_logs'
+  ]
+
+  // Execute deletions in parallel for restaurant-linked tables
+  await Promise.all(
+    tablesUsingRestaurantId.map(table => 
+      supabase.from(table).delete().eq('restaurant_id', id)
+    )
+  )
   
-  // Unlink profiles (don't delete them, just remove restaurant association)
+  // 4. Unlink profiles (don't delete them, just remove restaurant association)
   await supabase.from('profiles').update({ restaurant_id: null }).eq('restaurant_id', id)
   
-  // Finally delete the restaurant
+  // 5. Finally delete the restaurant
   const { error } = await supabase.from('restaurants').delete().eq('id', id)
   return error
 }

@@ -4,13 +4,41 @@ import { getCurrentUser } from "@/lib/store"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { 
   UtensilsCrossed, 
   Search, 
   Plus, 
   Wine,
   Cake,
-  Soup
+  Soup,
+  Pencil,
+  Trash2,
+  Loader2
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -25,6 +53,17 @@ interface MenuItem {
   image_url: string | null
 }
 
+const CATEGORIES = [
+  "Entrées",
+  "Plats",
+  "Viandes",
+  "Poissons",
+  "Desserts",
+  "Boissons",
+  "Cocktails",
+  "Accompagnements"
+]
+
 const getCategoryIcon = (category: string) => {
   const cat = category.toLowerCase()
   if (cat.includes('entrée') || cat.includes('soupe')) return Soup
@@ -38,6 +77,21 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+
+  // Delete confirmation
+  const [deleteItem, setDeleteItem] = useState<MenuItem | null>(null)
+
+  // Form state
+  const [formName, setFormName] = useState("")
+  const [formCategory, setFormCategory] = useState("")
+  const [formPrice, setFormPrice] = useState("")
+  const [formDescription, setFormDescription] = useState("")
+  const [formInStock, setFormInStock] = useState(true)
 
   useEffect(() => {
     loadMenuItems()
@@ -67,6 +121,98 @@ export default function MenuPage() {
       toast.error('Erreur de chargement du menu')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setFormName("")
+    setFormCategory("")
+    setFormPrice("")
+    setFormDescription("")
+    setFormInStock(true)
+    setEditingItem(null)
+  }
+
+  const openAddModal = () => {
+    resetForm()
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (item: MenuItem) => {
+    setEditingItem(item)
+    setFormName(item.name)
+    setFormCategory(item.category)
+    setFormPrice(item.price.toString())
+    setFormDescription(item.description || "")
+    setFormInStock(item.in_stock)
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!restaurantId) return
+
+    setIsSubmitting(true)
+
+    try {
+      const itemData = {
+        name: formName,
+        category: formCategory,
+        price: parseFloat(formPrice) || 0,
+        description: formDescription || null,
+        in_stock: formInStock,
+        restaurant_id: restaurantId,
+        updated_at: new Date().toISOString()
+      }
+
+      if (editingItem) {
+        // UPDATE
+        const { error } = await supabase
+          .from('menu_items')
+          .update(itemData)
+          .eq('id', editingItem.id)
+          .eq('restaurant_id', restaurantId) // Security check
+
+        if (error) throw error
+        toast.success(`"${formName}" modifié avec succès`)
+      } else {
+        // CREATE
+        const { error } = await supabase
+          .from('menu_items')
+          .insert({ ...itemData, created_at: new Date().toISOString() })
+
+        if (error) throw error
+        toast.success(`"${formName}" ajouté au menu`)
+      }
+
+      setIsModalOpen(false)
+      resetForm()
+      loadMenuItems()
+    } catch (error) {
+      console.error('Error saving item:', error)
+      toast.error("Erreur lors de l'enregistrement")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteItem || !restaurantId) return
+
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', deleteItem.id)
+        .eq('restaurant_id', restaurantId) // Security check
+
+      if (error) throw error
+      toast.success(`"${deleteItem.name}" supprimé du menu`)
+      setDeleteItem(null)
+      loadMenuItems()
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      toast.error("Erreur lors de la suppression")
     }
   }
 
@@ -126,13 +272,16 @@ export default function MenuPage() {
             La Carte
           </h1>
           <p className="text-muted-foreground mt-1">
-            {items.length} articles • Gérez la disponibilité de vos plats
+            {items.length} articles • Gérez vos plats et boissons
           </p>
         </div>
 
-        <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500">
+        <Button 
+          onClick={openAddModal}
+          className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500"
+        >
           <Plus className="w-4 h-4" />
-          Ajouter un plat
+          Nouveau Plat
         </Button>
       </div>
 
@@ -178,6 +327,9 @@ export default function MenuPage() {
                     <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">
                       En Stock
                     </th>
+                    <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-3">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -216,6 +368,26 @@ export default function MenuPage() {
                           </span>
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => openEditModal(item)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                            onClick={() => setDeleteItem(item)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -231,12 +403,135 @@ export default function MenuPage() {
           <UtensilsCrossed className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Aucun article dans la carte</h3>
           <p className="text-muted-foreground mb-6">Commencez par ajouter vos plats et boissons</p>
-          <Button className="gap-2">
+          <Button onClick={openAddModal} className="gap-2">
             <Plus className="w-4 h-4" />
             Ajouter le premier article
           </Button>
         </div>
       )}
+
+      {/* Add/Edit Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="glass-strong border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">
+              {editingItem ? "Modifier l'article" : "Nouveau Plat"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom du plat *</Label>
+              <Input
+                id="name"
+                placeholder="Ex: Entrecôte Grillée"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                required
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Catégorie *</Label>
+              <Select value={formCategory} onValueChange={setFormCategory} required>
+                <SelectTrigger className="bg-white/5 border-white/10">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Prix (€) *</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.5"
+                min="0"
+                placeholder="15.00"
+                value={formPrice}
+                onChange={(e) => setFormPrice(e.target.value)}
+                required
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Viande de boeuf grillée, sauce béarnaise..."
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                rows={2}
+                className="bg-white/5 border-white/10 resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+              <Label htmlFor="in_stock" className="cursor-pointer">En stock</Label>
+              <Switch
+                id="in_stock"
+                checked={formInStock}
+                onCheckedChange={setFormInStock}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || !formName || !formCategory || !formPrice}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : editingItem ? (
+                  "Modifier"
+                ) : (
+                  "Ajouter"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+        <AlertDialogContent className="glass-strong border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Supprimer cet article ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteItem?.name}" sera définitivement supprimé du menu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

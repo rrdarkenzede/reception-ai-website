@@ -11,21 +11,20 @@ import { fr } from 'date-fns/locale';
 import {
     LayoutDashboard,
     Calendar,
-    Phone,
     Settings,
     Menu,
     LogOut,
     Bell,
     ChevronDown,
     ChevronRight,
-    Target,
-    UtensilsCrossed,
-    Megaphone,
     Users,
     Star,
     CheckCircle,
     AlertCircle,
     ChefHat,
+    UtensilsCrossed,
+    Phone,
+    Megaphone,
 } from 'lucide-react';
 
 // UI Components
@@ -76,11 +75,12 @@ interface NavItem {
 const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
         { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard' },
-        { icon: Calendar, label: 'Réservations', href: '/dashboard/reservations' },
-        { icon: UtensilsCrossed, label: 'Ma Carte', href: '/dashboard/stock', minTier: 'pro' },
+        { icon: Calendar, label: 'Agenda', href: '/dashboard/agenda' },
+        { icon: UtensilsCrossed, label: 'La Carte', href: '/dashboard/menu' },
+        { icon: Phone, label: 'Journal d\'appels', href: '/dashboard/calls' },
         { icon: Megaphone, label: 'Marketing', href: '/dashboard/promos', minTier: 'pro' },
-        { icon: Phone, label: 'Appels IA', href: '/dashboard/calls' },
-        { icon: Settings, label: 'Réglages', href: '/dashboard/settings' },
+        { icon: ChefHat, label: 'Cuisine (KDS)', href: '/dashboard/kitchen', minTier: 'elite' },
+        { icon: Settings, label: 'Paramètres', href: '/dashboard/settings' },
     ];
 
     return baseItems;
@@ -89,15 +89,16 @@ const getNavItems = (): NavItem[] => {
 // Breadcrumb labels mapping
 const BREADCRUMB_LABELS: Record<string, string> = {
     'dashboard': 'Tableau de bord',
-    'reservations': 'Réservations',
-    'bookings': 'Réservations',
-    'stock': 'Ma Carte',
+    'agenda': 'Agenda',
+    'menu': 'La Carte',
+    'calls': 'Journal d\'appels',
     'promos': 'Marketing',
-    'calls': 'Appels IA',
-    'settings': 'Réglages',
+    'kitchen': 'Cuisine (KDS)',
+    'settings': 'Paramètres',
+    'reservations': 'Réservations',
 };
 
-const TIER_ORDER: Plan[] = ['starter', 'pro', 'elite'];
+const TIER_ORDER: Plan[] = ['free', 'starter', 'pro', 'elite', 'enterprise'];
 
 // ============================================================================
 // SIDEBAR COMPONENT
@@ -192,16 +193,26 @@ function Sidebar({ businessType, tier, companyName, isMobile = false, onNavigate
                 </nav>
             </ScrollArea>
 
-            {/* Tier Badge & Logout */}
+            {/* User Profile Section - Like "Luigi Pizza" in reference */}
             <div className="p-4 border-t border-border/50 space-y-3">
-                <div
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
-                    style={{ backgroundColor: `${theme.primary}15` }}
-                >
-                    <Target className="w-4 h-4" style={{ color: theme.primary }} />
-                    <span className="text-xs font-medium" style={{ color: theme.primary }}>
-                        Plan {tier.charAt(0).toUpperCase() + tier.slice(1)}
-                    </span>
+                {/* User Profile */}
+                <div className="flex items-center gap-3 px-2 py-2">
+                    <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                        style={{
+                            background: `linear-gradient(135deg, ${theme.primary}, ${theme.accent})`,
+                        }}
+                    >
+                        {companyName.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold text-foreground truncate">
+                            {companyName}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                            Plan {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                        </span>
+                    </div>
                 </div>
                 
                 {/* Logout Button */}

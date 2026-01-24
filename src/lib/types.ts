@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "client"
-export type Plan = "starter" | "pro" | "elite"
+export type Plan = "free" | "starter" | "pro" | "elite" | "enterprise"
 export type BusinessType = "restaurant" | "beauty" | "beaute" | "fitness" | "medical" | "dentiste" | "clinique" | "veterinaire" | "juridique" | "legal" | "real_estate" | "immobilier" | "automotive" | "garage" | "autoecole" | "trades" | "sport";
 export type Sector = BusinessType // Legacy alias for compatibility
 

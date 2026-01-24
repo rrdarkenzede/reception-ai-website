@@ -20,24 +20,28 @@ interface FeatureFlags {
 export function useTierAccess(plan: Plan | undefined): FeatureFlags {
   return useMemo(() => {
     const tier = plan || 'starter'
+    
+    // Enterprise is the top tier (same as elite)
+    const isTopTier = tier === 'elite' || tier === 'enterprise'
+    const isProOrAbove = tier === 'pro' || isTopTier
 
     return {
-      // Tier 1 (Starter)
+      // Tier 1 (Starter/Free)
       liveFeed: true,
-      liveFeedReadOnly: tier === 'starter',
+      liveFeedReadOnly: tier === 'starter' || tier === 'free',
       calendar: true,
-      calendarReadOnly: tier === 'starter',
-      editCalendar: tier !== 'starter',
-      resourceManagement: tier !== 'starter',
-      teamChat: tier !== 'starter',
-      basicAnalytics: tier !== 'starter',
+      calendarReadOnly: tier === 'starter' || tier === 'free',
+      editCalendar: isProOrAbove,
+      resourceManagement: isProOrAbove,
+      teamChat: isProOrAbove,
+      basicAnalytics: isProOrAbove,
       
-      // Tier 2 (Pro) and above
-      advancedAnalytics: tier === 'elite',
-      panicButton: tier === 'elite',
-      smartTriggers: tier === 'elite',
-      reputationAI: tier === 'elite',
-      multiLocation: tier === 'elite',
+      // Tier 3 (Elite/Enterprise)
+      advancedAnalytics: isTopTier,
+      panicButton: isTopTier,
+      smartTriggers: isTopTier,
+      reputationAI: isTopTier,
+      multiLocation: isTopTier,
     }
   }, [plan])
 }

@@ -59,6 +59,30 @@ export default function ReservationsPage() {
         }
     }
 
+    // Call customer - native dialer on mobile, clipboard on desktop
+    const handleCall = (phoneNumber: string | undefined) => {
+        if (!phoneNumber) {
+            toast.error("Numéro de téléphone non disponible")
+            return
+        }
+
+        // Clean the phone number
+        let cleanedNumber = phoneNumber.replace(/\s/g, '')
+        if (cleanedNumber.startsWith('0')) {
+            cleanedNumber = '+33' + cleanedNumber.substring(1)
+        }
+
+        // Check if mobile/tablet (has touch)
+        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
+        if (isMobile) {
+            window.location.href = `tel:${cleanedNumber}`
+        } else {
+            navigator.clipboard.writeText(cleanedNumber)
+            toast.success(`Numéro copié : ${cleanedNumber}`)
+        }
+    }
+
     const resetForm = () => {
         setFormClientName("")
         setFormPhone("")
@@ -323,6 +347,15 @@ export default function ReservationsPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="hover:text-cyan-400 transition-colors"
+                                                onClick={() => handleCall(rdv.phone)}
+                                                title="Appeler le client"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                            </Button>
                                             <Dialog open={editingRdv?.id === rdv.id} onOpenChange={(open) => !open && setEditingRdv(null)}>
                                                 <DialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" onClick={() => handleEdit(rdv)}>

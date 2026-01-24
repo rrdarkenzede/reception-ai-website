@@ -24,6 +24,9 @@ import MenuPage from '@/routes/dashboard/MenuPage'
 import PromosPage from '@/routes/dashboard/PromosPage'
 import SettingsPage from '@/routes/dashboard/SettingsPage'
 import KitchenPage from '@/routes/dashboard/KitchenPage'
+import ClientsPage from '@/routes/dashboard/ClientsPage'
+import AgendaPage from '@/routes/dashboard/AgendaPage'
+import ServicesPage from '@/routes/dashboard/ServicesPage'
 
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
@@ -58,6 +61,9 @@ function App() {
           }
         >
           <Route index element={<DashboardPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="agenda" element={<AgendaPage />} />
+          <Route path="services" element={<ServicesPage />} />
           <Route path="bookings" element={<BookingsPage />} />
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="calls" element={<CallsPage />} />

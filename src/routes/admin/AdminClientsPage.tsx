@@ -471,27 +471,29 @@ export default function AdminClientsPage() {
                                                             <AlertDialogTitle className="text-destructive">
                                                                 ⚠️ Supprimer définitivement
                                                             </AlertDialogTitle>
-                                                            <AlertDialogDescription className="space-y-2">
-                                                                <p>
-                                                                    Vous êtes sur le point de supprimer <strong>{r.name}</strong>.
-                                                                </p>
-                                                                <p className="text-destructive font-medium">
-                                                                    Cette action supprimera TOUTES les données associées:
-                                                                </p>
-                                                                <ul className="list-disc list-inside text-sm">
-                                                                    <li>Réservations</li>
-                                                                    <li>Menu / Stock</li>
-                                                                    <li>Promotions</li>
-                                                                    <li>Historique des appels</li>
-                                                                </ul>
-                                                                <div className="pt-4">
-                                                                    <Label>Tapez <strong>DELETE</strong> pour confirmer:</Label>
-                                                                    <Input 
-                                                                        className="mt-2"
-                                                                        placeholder="DELETE"
-                                                                        value={deleteConfirmText}
-                                                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                                                    />
+                                                            <AlertDialogDescription className="space-y-2" asChild>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    <p>
+                                                                        Vous êtes sur le point de supprimer <strong>{r.name}</strong>.
+                                                                    </p>
+                                                                    <p className="text-destructive font-medium mt-2">
+                                                                        Cette action supprimera TOUTES les données associées:
+                                                                    </p>
+                                                                    <ul className="list-disc list-inside mt-1 ml-1">
+                                                                        <li>Réservations</li>
+                                                                        <li>Menu / Stock</li>
+                                                                        <li>Promotions</li>
+                                                                        <li>Historique des appels</li>
+                                                                    </ul>
+                                                                    <div className="pt-4">
+                                                                        <Label>Tapez <strong>DELETE</strong> pour confirmer:</Label>
+                                                                        <Input 
+                                                                            className="mt-2"
+                                                                            placeholder="DELETE"
+                                                                            value={deleteConfirmText}
+                                                                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
