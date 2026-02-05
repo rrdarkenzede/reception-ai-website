@@ -22,7 +22,7 @@ export function AdminNavbar() {
 
   const totalRevenue = users.reduce((acc, u) => {
     if (u.plan === "pro") return acc + 500
-    if (u.plan === "elite") return acc + 1000
+    if (u.plan === "enterprise") return acc + 1000
     return acc
   }, 0)
 

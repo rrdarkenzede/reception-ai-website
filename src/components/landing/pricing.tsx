@@ -21,9 +21,9 @@ const allFeatures = [
 ]
 
 const planFeatures: Record<string, string[]> = {
-  starter: allFeatures.slice(0, 3),
+  free: allFeatures.slice(0, 3),
   pro: allFeatures.slice(0, 8),
-  elite: allFeatures,
+  enterprise: allFeatures,
 }
 
 export function Pricing() {

@@ -80,7 +80,7 @@ const getNavItems = (): NavItem[] => {
         { icon: UtensilsCrossed, label: 'La Carte', href: '/dashboard/menu' },
         { icon: Phone, label: 'Journal d\'appels', href: '/dashboard/calls' },
         { icon: Megaphone, label: 'Marketing', href: '/dashboard/promos', minTier: 'pro' },
-        { icon: ChefHat, label: 'Cuisine (KDS)', href: '/dashboard/kitchen', minTier: 'elite' },
+        { icon: ChefHat, label: 'Cuisine (KDS)', href: '/dashboard/kitchen', minTier: 'enterprise' },
         { icon: LifeBuoy, label: 'Support', href: '/dashboard/support' },
         { icon: Settings, label: 'Paramètres', href: '/dashboard/settings' },
     ];
@@ -100,7 +100,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
     'reservations': 'Réservations',
 };
 
-const TIER_ORDER: Plan[] = ['free', 'starter', 'pro', 'elite', 'enterprise'];
+const TIER_ORDER: Plan[] = ['free', 'pro', 'enterprise'];
 
 // ============================================================================
 // SIDEBAR COMPONENT

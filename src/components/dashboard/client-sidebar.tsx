@@ -10,15 +10,7 @@ import {
   Tag,
   Phone,
   Settings,
-  Users,
-  DoorOpen,
-  Stethoscope,
-  AlertTriangle,
-  Wrench,
-  Car,
-  FileText,
   Target,
-  ClipboardList,
 } from "lucide-react"
 
 interface ClientSidebarProps {
@@ -38,126 +30,14 @@ const sectorMenus: Record<Sector, MenuItem[]> = {
     { icon: LayoutDashboard, label: "Tableau de bord", href: "/dashboard" },
     { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
     { icon: Table2, label: "Tables", href: "/dashboard/tables", minPlan: "pro" },
-    { icon: UtensilsCrossed, label: "Ma Carte", href: "/dashboard/menu", minPlan: "pro" },
+    { icon: UtensilsCrossed, label: "Ma Carte", href: "/dashboard/menu" },
     { icon: Tag, label: "Marketing / Promos", href: "/dashboard/promos", minPlan: "pro" },
     { icon: Phone, label: "Appels IA", href: "/dashboard/calls" },
     { icon: Settings, label: "Réglages", href: "/dashboard/settings" },
   ],
-  dentiste: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Users, label: "Patients", href: "/dashboard/reservations" },
-    { icon: DoorOpen, label: "Salles", href: "/dashboard/rooms", minPlan: "pro" },
-    { icon: Stethoscope, label: "Services", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: AlertTriangle, label: "Urgences", href: "/dashboard/urgences", minPlan: "elite" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  garage: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Wrench, label: "Réparations", href: "/dashboard/reservations" },
-    { icon: Car, label: "Véhicules", href: "/dashboard/vehicles", minPlan: "pro" },
-    { icon: ClipboardList, label: "Pièces", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: FileText, label: "Devis", href: "/dashboard/quotes", minPlan: "pro" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  immobilier: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Visites", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  juridique: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Consultations", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  beaute: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
-    { icon: UtensilsCrossed, label: "Prestations", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: Tag, label: "Promos", href: "/dashboard/promos", minPlan: "pro" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  beauty: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
-    { icon: UtensilsCrossed, label: "Prestations", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: Tag, label: "Promos", href: "/dashboard/promos", minPlan: "pro" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  sport: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  autoecole: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Leçons", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  veterinaire: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Consultations", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  clinique: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  fitness: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Réservations", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  medical: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Rendez-vous", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  legal: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Consultations", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  real_estate: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Visites", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  automotive: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Wrench, label: "Réparations", href: "/dashboard/reservations" },
-    { icon: Car, label: "Véhicules", href: "/dashboard/vehicles", minPlan: "pro" },
-    { icon: ClipboardList, label: "Pièces", href: "/dashboard/stock", minPlan: "pro" },
-    { icon: FileText, label: "Devis", href: "/dashboard/quotes", minPlan: "pro" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
-  trades: [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Calendar, label: "Interventions", href: "/dashboard/reservations" },
-    { icon: Phone, label: "Appels", href: "/dashboard/calls" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-  ],
 }
 
-// Assign 'beauty' to match 'beaute' exactly since we couldn't reference it inside
-sectorMenus.beauty = sectorMenus.beaute;
-
-const planOrder: Plan[] = ["starter", "pro", "elite"]
+const planOrder: Plan[] = ["free", "pro", "enterprise"]
 
 export function ClientSidebar({ sector, plan }: ClientSidebarProps) {
   const location = useLocation()

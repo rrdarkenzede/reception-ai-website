@@ -120,34 +120,26 @@ export function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-border">
             <p className="text-sm text-muted-foreground text-center mb-4">
-              Connexion rapide :
+              Comptes de démonstration :
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('rayanebendaho0@gmail.com');
-                  setPassword('rayane2008.');
-                }}
-                className="btn-secondary flex flex-col items-center gap-1 py-3"
-              >
-                <span className="text-orange-400 font-semibold">👑 Admin</span>
-                <span className="text-xs text-muted-foreground">Super Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('contact@fouquets-paris.fr');
-                  setPassword('rayane2008.');
-                }}
-                className="btn-secondary flex flex-col items-center gap-1 py-3"
-              >
-                <span className="text-cyan-400 font-semibold">🏢 Entreprise</span>
-                <span className="text-xs text-muted-foreground">Le Fouquet's</span>
-              </button>
+            <div className="space-y-2 text-xs">
+              <div className="glass-card rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-cyan-400">Admin</span>
+                  <span className="badge badge-orange text-xs">Super Admin</span>
+                </div>
+                <div className="text-muted-foreground mt-1">rayanebendaho0@gmail.com</div>
+              </div>
+              <div className="glass-card rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-cyan-400">Client</span>
+                  <span className="badge badge-cyan text-xs">Enterprise</span>
+                </div>
+                <div className="text-muted-foreground mt-1">contact@fouquets-paris.fr</div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Cliquez sur un bouton puis sur "Se connecter"
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Mot de passe : rayane2008.
             </p>
           </div>
         </div>

@@ -93,7 +93,7 @@ function Navbar() {
 // Hero Section
 function HeroSection() {
   return (
-    <section className="min-h-screen pb-20 px-6 relative overflow-hidden" style={{ paddingTop: '160px' }}>
+    <section className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 dot-grid-bg opacity-30" />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-[128px]" />
@@ -110,12 +110,12 @@ function HeroSection() {
               <Zap className="w-3 h-3 mr-1" /> Propulsé par NeuralVoice™
             </div>
             
-            <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.1 }} className="font-bold mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
               Ne perdez plus jamais{' '}
               <span className="gradient-text">1€ de chiffre d'affaires.</span>
             </h1>
             
-            <p style={{ fontSize: '1.25rem' }} className="text-muted-foreground mb-8 leading-relaxed">
+            <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
               La première IA réceptionniste vocale qui répond à vos appels 24/7, 
               prend les réservations et gère vos commandes en temps réel.
             </p>

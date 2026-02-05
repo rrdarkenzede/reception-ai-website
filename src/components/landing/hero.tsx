@@ -7,7 +7,7 @@ function KitchenTicketMockup() {
   return (
     <div className="relative w-full max-w-md mx-auto animate-float">
       {/* Ambient glow behind */}
-      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 blur-3xl scale-150" />
+      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-400/20 blur-3xl scale-150" />
       
       {/* Main ticket card */}
       <div className="relative glass-card rounded-2xl p-6 ticket-shadow">
@@ -80,7 +80,7 @@ export function Hero() {
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Primary gradient blob */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-cyan-500/15 via-blue-600/10 to-purple-600/10 rounded-full blur-3xl animate-blob" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-br from-cyan-500/15 via-blue-600/10 to-cyan-400/10 rounded-full blur-3xl animate-blob" />
         {/* Secondary accent blob */}
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-blue-600/10 via-cyan-500/5 to-transparent rounded-full blur-3xl animate-blob" style={{ animationDelay: '-4s' }} />
         {/* Subtle grid pattern */}
@@ -104,7 +104,7 @@ export function Hero() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
               <span className="text-muted-foreground">Propulsé par</span>
-              <span className="font-semibold text-foreground">Retell AI</span>
+              <span className="font-semibold text-foreground">NeuralVoice™</span>
             </div>
 
             {/* Main headline */}

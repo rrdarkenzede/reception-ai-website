@@ -48,7 +48,7 @@ export function PanicButton({ onPanic, isPaused = false }: PanicButtonProps) {
             Arrêt d&apos;urgence
           </AlertDialogTitle>
           <AlertDialogDescription className="text-muted-foreground">
-            Cette action va arrêter immédiatement tous les appels entrant et sortant de votre système Vapi.ai.
+            Cette action va arrêter immédiatement tous les appels entrant et sortant de votre système NeuralVoice™.
             Cette action ne peut pas être annulée automatiquement.
           </AlertDialogDescription>
         </AlertDialogHeader>

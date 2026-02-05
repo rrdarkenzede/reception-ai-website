@@ -9,44 +9,22 @@ interface LostRevenueCalculatorProps {
   bookings: Array<{ status: string; metadata?: { estimated_cost?: number; guests?: number } }>
 }
 
-// Average booking values per sector (in EUR)
 const AVG_BOOKING_VALUES: Record<BusinessType, number> = {
   restaurant: 50, // Average per person
-  beauty: 80,
-  fitness: 35,
-  medical: 120,
-  legal: 200,
-  real_estate: 0, // Commission-based
-  automotive: 250,
-  trades: 150,
-  dentiste: 60,
-  garage: 180,
-  immobilier: 300,
-  juridique: 250,
-  beaute: 75,
-  sport: 40,
-  autoecole: 120,
-  veterinaire: 90,
-  clinique: 150,
 }
 
 const CONVERSION_RATE = 0.15 // 15% of calls convert to bookings
 
 export function LostRevenueCalculator({ missedCalls, businessType, bookings }: LostRevenueCalculatorProps) {
   const calculations = useMemo(() => {
-    const avgBookingValue = AVG_BOOKING_VALUES[businessType]
-    const avgGuests = businessType === 'restaurant' 
-      ? bookings.reduce((acc, b) => acc + (b.metadata?.guests || 1), 0) / bookings.length || 2
-      : 1
+    const avgBookingValue = AVG_BOOKING_VALUES.restaurant;
+    const avgGuests = bookings.reduce((acc, b) => acc + (b.metadata?.guests || 1), 0) / bookings.length || 2
     
     const estimatedBookingsLost = Math.floor(missedCalls * CONVERSION_RATE)
     const estimatedRevenueLost = estimatedBookingsLost * avgBookingValue * avgGuests
     const potentialBookingsValue = bookings
       .filter((b) => b.status === 'completed')
       .reduce((acc, b) => {
-        if (businessType === 'automotive' && b.metadata?.estimated_cost) {
-          return acc + (b.metadata.estimated_cost as number)
-        }
         return acc + avgBookingValue * (b.metadata?.guests || 1)
       }, 0)
 

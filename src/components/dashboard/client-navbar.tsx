@@ -29,7 +29,7 @@ export function ClientNavbar({ user, onPanicClick, isPaused }: ClientNavbarProps
 
   const getPlanBadgeStyle = () => {
     switch (user.plan) {
-      case "elite":
+      case "enterprise":
         return "bg-gradient-to-r from-warning/20 to-primary/20 text-warning border border-warning/30"
       case "pro":
         return "bg-primary/10 text-primary border border-primary/30"
@@ -62,8 +62,8 @@ export function ClientNavbar({ user, onPanicClick, isPaused }: ClientNavbarProps
 
       {/* Right - Actions */}
       <div className="flex items-center gap-3">
-        {/* Panic Button - Elite only */}
-        {user.plan === "elite" && onPanicClick && (
+        {/* Panic Button - Enterprise only */}
+        {user.plan === "enterprise" && onPanicClick && (
           <Button
             onClick={onPanicClick}
             className={`rounded-full w-14 h-14 p-0 font-bold text-sm ${
